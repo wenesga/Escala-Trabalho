@@ -78,6 +78,7 @@ fun Raiz(repo: Repositorio, pedirNotificacao: () -> Unit, pedirAgenda: () -> Uni
             c = c,
             primeiraVez = !c.configurado,
             aoCor = { cor -> if (c.configurado) scope.launch { repo.editar { it.copy(cor = cor) } } },
+            aoFerias = { lista -> if (c.configurado) scope.launch { repo.editar { it.copy(ferias = lista) } } },
             aoSalvar = { nova ->
                 scope.launch { repo.editar { atual -> nova.copy(trocas = atual.trocas) } }
                 ajustes = false

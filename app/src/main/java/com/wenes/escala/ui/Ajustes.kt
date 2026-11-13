@@ -72,6 +72,7 @@ fun Ajustes(
     c: Config,
     primeiraVez: Boolean,
     aoCor: (CorDestaque) -> Unit,
+    aoFerias: (List<Periodo>) -> Unit,
     aoSalvar: (Config) -> Unit,
     aoVoltar: () -> Unit,
 ) {
@@ -117,7 +118,9 @@ fun Ajustes(
                 ferias.forEach { periodo ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(Formato.periodo(periodo), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                        IconButton(onClick = { ferias = ferias - periodo }) { Icon(Icons.Outlined.Close, "Remover") }
+                        IconButton(onClick = { ferias = ferias - periodo; aoFerias(ferias) }) {
+                            Icon(Icons.Outlined.Close, "Remover")
+                        }
                     }
                 }
             }
@@ -198,7 +201,12 @@ fun Ajustes(
         Campo.SAIDA -> DialogoHora(saida, { saida = it; aberto = null }, { aberto = null })
         Campo.ALARME -> DialogoHora(alarme, { alarme = it; aberto = null }, { aberto = null })
         Campo.FERIAS -> DialogoFerias(
-            aoOk = { periodo -> ferias = (ferias + periodo).distinct().sortedBy { it.inicio }; aberto = null },
+            // As férias são gravadas na hora, sem precisar tocar em Salvar.
+            aoOk = { periodo ->
+                ferias = (ferias + periodo).distinct().sortedBy { it.inicio }
+                aoFerias(ferias)
+                aberto = null
+            },
             aoFechar = { aberto = null },
         )
         null -> Unit
