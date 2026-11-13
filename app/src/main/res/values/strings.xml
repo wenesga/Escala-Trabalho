@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Escala</string>
+    <string name="widget_descricao">Hoje é dia de trabalho ou folga</string>
+    <string name="canal_alarme">Alarme da escala</string>
+    <string name="canal_alarme_descricao">Toca nos dias de trabalho</string>
+</resources>
