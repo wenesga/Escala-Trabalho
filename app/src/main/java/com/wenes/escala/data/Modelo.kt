@@ -40,10 +40,13 @@ object Escala {
     fun emFerias(c: Config, dia: LocalDate): Boolean = c.ferias.any { dia >= it.inicio && dia <= it.fim }
 
     /** O dia, pela escala base (sem trocas), já sem os dias de férias. */
-    fun padrao(c: Config, dia: LocalDate): Boolean {
+    fun padrao(c: Config, dia: LocalDate): Boolean = !emFerias(c, dia) && noCiclo(c, dia)
+
+    /** O dia pelo ritmo da escala (dias de trabalho e de folga), sem olhar as férias. */
+    fun noCiclo(c: Config, dia: LocalDate): Boolean {
         val ciclo = (c.diasTrabalho + c.diasFolga).toLong()
         val posicao = Math.floorMod(dia.toEpochDay() - c.inicio.toEpochDay(), ciclo)
-        return !emFerias(c, dia) && posicao < c.diasTrabalho
+        return posicao < c.diasTrabalho
     }
 
     fun trabalha(c: Config, dia: LocalDate): Boolean = when (c.trocas[dia]) {

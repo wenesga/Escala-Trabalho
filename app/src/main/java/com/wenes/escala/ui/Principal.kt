@@ -258,7 +258,8 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
     val feriado = Feriados.nome(dia) != null
     // Feriado: um tracinho embaixo do número, na cor do feriado.
     val corFeriado = corDoFeriado(c.cor)
-    val ferias = Escala.emFerias(c, dia) && !trabalha
+    // Cinza só nos dias em que a pessoa trabalharia se não estivesse de férias.
+    val ferias = Escala.emFerias(c, dia) && !trabalha && Escala.noCiclo(c, dia)
     Box(
         modifier.aspectRatio(1f).padding(3.dp).clip(CircleShape)
             .background(
