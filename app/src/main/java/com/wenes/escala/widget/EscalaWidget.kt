@@ -74,13 +74,19 @@ private fun Conteudo(c: Config) {
                 Text(detalhe, style = TextStyle(color = texto, fontSize = 14.sp), maxLines = 1)
             }
         }
-        // Médio: data e título.
+        // Médio: a data em cima e, embaixo, o título com o detalhe na frente dele (cabe ao lado, não vai para baixo).
         altura < 110.dp -> Column(
             moldura.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Hoje · ${Formato.dia(hoje)}", style = TextStyle(color = texto, fontSize = 12.sp))
-            Text(titulo, style = TextStyle(color = texto, fontSize = 24.sp, fontWeight = FontWeight.Bold))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(titulo, style = TextStyle(color = texto, fontSize = 24.sp, fontWeight = FontWeight.Bold))
+                if (detalhe.isNotEmpty()) {
+                    Spacer(GlanceModifier.width(16.dp))
+                    Text(detalhe, style = TextStyle(color = texto, fontSize = 14.sp), maxLines = 1)
+                }
+            }
         }
         // Alto: data, título e o detalhe.
         else -> Column(
