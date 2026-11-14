@@ -46,9 +46,13 @@ object Notificacoes {
         )
         return NotificationCompat.Builder(contexto, CANAL_ALARME)
             .setSmallIcon(R.drawable.ic_notificacao)
-            .setContentTitle(if (teste) "Teste do alarme" else if (saida) "Saída" else "Trabalho")
+            .setContentTitle(if (teste) "Teste do alarme" else if (saida) "Folga" else "Trabalho")
             .setContentText(
-                if (teste) "Está tudo certo" else if (saida) "Saída às ${Formato.hora(c.saida)}" else Formato.horario(c),
+                when {
+                    teste -> "Está tudo certo"
+                    saida -> null
+                    else -> Formato.horario(c)
+                },
             )
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)

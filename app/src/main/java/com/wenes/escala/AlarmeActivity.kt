@@ -104,16 +104,16 @@ private fun TelaAlarme(config: Config?, saida: Boolean, teste: Boolean, aoAdiar:
                 Text(
                     when {
                         teste -> "Teste do alarme"
-                        saida -> "Fim do trabalho"
+                        saida -> "Folga"
                         else -> "Hoje é dia de trabalho"
                     },
                     style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,
                 )
-                if (config != null) {
+                // O alarme de saída só diz "Folga": o resto a pessoa já sabe.
+                if (config != null && !saida) {
                     Text(
                         when {
                             teste -> "Está tudo certo"
-                            saida -> "Saída às ${Formato.hora(config.saida)}"
                             else -> Formato.horario(config)
                         },
                         style = MaterialTheme.typography.titleLarge,
