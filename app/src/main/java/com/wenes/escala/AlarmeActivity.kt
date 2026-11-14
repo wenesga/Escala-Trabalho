@@ -70,6 +70,7 @@ class AlarmeActivity : ComponentActivity() {
                 TelaAlarme(
                     config = config,
                     saida = tipo == Agendador.TIPO_SAIDA,
+                    teste = tipo == Agendador.TIPO_TESTE,
                     aoAdiar = {
                         AcaoAlarmeReceiver.soneca(this, tipo)
                         finish()
@@ -85,7 +86,7 @@ class AlarmeActivity : ComponentActivity() {
 }
 
 @Composable
-private fun TelaAlarme(config: Config?, saida: Boolean, aoAdiar: () -> Unit, aoParar: () -> Unit) {
+private fun TelaAlarme(config: Config?, saida: Boolean, teste: Boolean, aoAdiar: () -> Unit, aoParar: () -> Unit) {
     var agora by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -101,12 +102,20 @@ private fun TelaAlarme(config: Config?, saida: Boolean, aoAdiar: () -> Unit, aoP
                 Text(Formato.hora(agora), style = MaterialTheme.typography.displayLarge)
                 Spacer(Modifier.weight(1f))
                 Text(
-                    if (saida) "Fim do trabalho" else "Hoje é dia de trabalho",
+                    when {
+                        teste -> "Teste do alarme"
+                        saida -> "Fim do trabalho"
+                        else -> "Hoje é dia de trabalho"
+                    },
                     style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,
                 )
                 if (config != null) {
                     Text(
-                        if (saida) "Saída às ${Formato.hora(config.saida)}" else Formato.horario(config),
+                        when {
+                            teste -> "Está tudo certo"
+                            saida -> "Saída às ${Formato.hora(config.saida)}"
+                            else -> Formato.horario(config)
+                        },
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

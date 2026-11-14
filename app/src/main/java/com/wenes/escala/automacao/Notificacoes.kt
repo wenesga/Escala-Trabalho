@@ -37,6 +37,7 @@ object Notificacoes {
 
     fun notificacaoAlarme(contexto: Context, c: Config, tipo: String): Notification {
         val saida = tipo == Agendador.TIPO_SAIDA
+        val teste = tipo == Agendador.TIPO_TESTE
         val tela = PendingIntent.getActivity(
             contexto, 10,
             Intent(contexto, AlarmeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -45,8 +46,10 @@ object Notificacoes {
         )
         return NotificationCompat.Builder(contexto, CANAL_ALARME)
             .setSmallIcon(R.drawable.ic_notificacao)
-            .setContentTitle(if (saida) "Saída" else "Trabalho")
-            .setContentText(if (saida) "Saída às ${Formato.hora(c.saida)}" else Formato.horario(c))
+            .setContentTitle(if (teste) "Teste do alarme" else if (saida) "Saída" else "Trabalho")
+            .setContentText(
+                if (teste) "Está tudo certo" else if (saida) "Saída às ${Formato.hora(c.saida)}" else Formato.horario(c),
+            )
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

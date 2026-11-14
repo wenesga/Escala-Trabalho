@@ -24,6 +24,7 @@ object Agendador {
     const val EXTRA_TIPO = "tipo"
     const val TIPO_ENTRADA = "entrada"
     const val TIPO_SAIDA = "saida"
+    const val TIPO_TESTE = "teste"
 
     private const val REQ_SAIDA = 5
     private const val REQ_ALARME = 1

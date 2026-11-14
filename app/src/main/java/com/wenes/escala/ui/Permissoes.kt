@@ -188,7 +188,7 @@ fun AlarmeGarantido() {
             }
             TextButton(
                 onClick = {
-                    Agendador.agendarSoneca(contexto, LocalDateTime.now().plusSeconds(10))
+                    Agendador.agendarSoneca(contexto, LocalDateTime.now().plusSeconds(10), Agendador.TIPO_TESTE)
                     Toast.makeText(contexto, "O alarme toca em 10 segundos", Toast.LENGTH_LONG).show()
                 },
                 modifier = Modifier.align(Alignment.End),
