@@ -320,8 +320,9 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
         // Folga que veio de uma troca (a compensação): um pontinho. O extra já se vê pela cor.
         if (trocado && !trabalha) {
             Box(
-                Modifier.align(Alignment.TopCenter).padding(top = 5.dp).size(5.dp).clip(CircleShape)
-                    .background(cores.error),
+                // Embaixo do número; se o dia também é feriado, um pouco acima do tracinho.
+                Modifier.align(Alignment.BottomCenter).padding(bottom = if (feriado) 12.dp else 6.dp).size(6.dp)
+                    .clip(CircleShape).background(corDoExtra(c.cor)),
             )
         }
     }
@@ -342,7 +343,7 @@ private fun Legenda(cor: CorDestaque) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
             item("Trabalho") { Box(Modifier.size(14.dp).clip(CircleShape).background(cores.primary)) }
             item("Extra") { Box(Modifier.size(14.dp).clip(CircleShape).background(corDoExtra(cor))) }
-            item("Troca") { Box(Modifier.size(6.dp).clip(CircleShape).background(cores.error)) }
+            item("Troca") { Box(Modifier.size(7.dp).clip(CircleShape).background(corDoExtra(cor))) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
             item("Férias") {
