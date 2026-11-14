@@ -275,11 +275,13 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
     val corFeriado = corDoFeriado(c.cor)
     // Cinza só nos dias em que a pessoa trabalharia se não estivesse de férias.
     val ferias = Escala.emFerias(c, dia) && !trabalha && Escala.noCiclo(c, dia)
+    // Extra: dia de folga em que a pessoa cobriu um colega. Fica no tom escuro da cor de destaque.
+    val extra = trocado && trabalha
     Box(
         modifier.aspectRatio(1f).padding(3.dp).clip(CircleShape)
             .background(
                 when {
-                    trabalha -> cores.primary
+                    trabalha -> if (extra) cores.primaryContainer else cores.primary
                     ferias -> androidx.compose.ui.graphics.lerp(cores.surfaceContainerLow, cores.tertiary, 0.35f)
                     else -> Color.Transparent
                 },
@@ -291,7 +293,11 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
         Text(
             "${dia.dayOfMonth}",
             style = MaterialTheme.typography.bodyLarge,
-            color = if (trabalha) cores.onPrimary else cores.onSurface,
+            color = when {
+                extra -> cores.onPrimaryContainer
+                trabalha -> cores.onPrimary
+                else -> cores.onSurface
+            },
         )
         if (feriado) {
             Box(
@@ -299,10 +305,11 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
                     .clip(RoundedCornerShape(2.dp)).background(corFeriado),
             )
         }
-        if (trocado) {
+        // Folga que veio de uma troca (a compensação): um pontinho. O extra já se vê pela cor.
+        if (trocado && !trabalha) {
             Box(
                 Modifier.align(Alignment.TopCenter).padding(top = 5.dp).size(5.dp).clip(CircleShape)
-                    .background(if (trabalha) cores.onPrimary else cores.error),
+                    .background(cores.error),
             )
         }
     }
@@ -311,28 +318,34 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
 @Composable
 private fun Legenda(cor: CorDestaque) {
     val cores = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
+    @Composable
+    fun item(nome: String, marca: @Composable () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(
-                Modifier.size(14.dp).clip(CircleShape).background(
-                    androidx.compose.ui.graphics.lerp(cores.surfaceContainerLow, cores.tertiary, 0.35f),
-                ),
-            )
-            Text("Férias", style = MaterialTheme.typography.labelMedium, color = cores.onSurfaceVariant)
+            marca()
+            Text(nome, style = MaterialTheme.typography.labelMedium, color = cores.onSurfaceVariant)
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(
-                Modifier.size(width = 14.dp, height = 3.dp).clip(RoundedCornerShape(2.dp)).background(corDoFeriado(cor)),
-            )
-            Text("Feriado", style = MaterialTheme.typography.labelMedium, color = cores.onSurfaceVariant)
+    }
+    val centro = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
+            item("Trabalho") { Box(Modifier.size(14.dp).clip(CircleShape).background(cores.primary)) }
+            item("Extra") { Box(Modifier.size(14.dp).clip(CircleShape).background(cores.primaryContainer)) }
+            item("Troca") { Box(Modifier.size(6.dp).clip(CircleShape).background(cores.error)) }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.size(14.dp).clip(CircleShape).background(cores.primary))
-            Text("Trabalho", style = MaterialTheme.typography.labelMedium, color = cores.onSurfaceVariant)
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.size(6.dp).clip(CircleShape).background(cores.error))
-            Text("Troca", style = MaterialTheme.typography.labelMedium, color = cores.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
+            item("Férias") {
+                Box(
+                    Modifier.size(14.dp).clip(CircleShape).background(
+                        androidx.compose.ui.graphics.lerp(cores.surfaceContainerLow, cores.tertiary, 0.35f),
+                    ),
+                )
+            }
+            item("Feriado") {
+                Box(
+                    Modifier.size(width = 14.dp, height = 3.dp).clip(RoundedCornerShape(2.dp))
+                        .background(corDoFeriado(cor)),
+                )
+            }
         }
     }
 }
