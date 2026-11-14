@@ -68,7 +68,8 @@ private fun Conteudo(c: Config) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(titulo, style = TextStyle(color = texto, fontSize = 20.sp, fontWeight = FontWeight.Bold))
-            Spacer(GlanceModifier.width(8.dp))
+            // Espaço na frente da data, para não ficar grudada no título.
+            Spacer(GlanceModifier.width(16.dp))
             Text(Formato.dia(hoje), style = TextStyle(color = texto, fontSize = 12.sp))
         }
         // Médio: data e título.
