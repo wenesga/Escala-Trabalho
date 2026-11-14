@@ -93,10 +93,10 @@ private fun Conteudo(c: Config) {
         // para não sobrar vazio em cima e embaixo (limitada pela largura, para nada passar da borda).
         else -> {
             val largura = LocalSize.current.width.value
-            val titulo_sp = minOf(altura.value * 0.26f, (largura - 32f) / 4.6f).coerceIn(28f, 52f)
-            val data_sp = (titulo_sp * 0.42f).coerceIn(12f, 20f)
-            val detalhe_sp = minOf(titulo_sp * 0.5f, (largura - 32f) / 9.5f).coerceIn(12f, 22f)
-            val respiro = (titulo_sp * 0.22f).dp
+            val titulo_sp = minOf(altura.value * 0.17f, (largura - 32f) / 4.6f).coerceIn(28f, 36f)
+            val data_sp = (titulo_sp * 0.40f).coerceIn(12f, 15f)
+            val detalhe_sp = minOf(titulo_sp * 0.46f, (largura - 32f) / 9.5f).coerceIn(12f, 17f)
+            val respiro = (titulo_sp * 0.16f).dp
             Column(
                 moldura.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
