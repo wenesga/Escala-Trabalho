@@ -64,6 +64,9 @@ import java.time.YearMonth
 private val VermelhoFeriado = Color(0xFFE25B5B)
 private val AmareloFeriado = Color(0xFFFFB84D)
 
+/** Dia extra (cobriu um colega): turquesa, o verde puxado para o azul. Se o tema já é turquesa, vira azul. */
+private fun corDoExtra(cor: CorDestaque) = if (cor == CorDestaque.TURQUESA) Color(0xFF3D7FEF) else Color(0xFF20A398)
+
 /** No tema vermelho o feriado vira amarelo, para não ficar igual aos dias de trabalho. */
 private fun corDoFeriado(cor: CorDestaque) = if (cor == CorDestaque.VERMELHO) AmareloFeriado else VermelhoFeriado
 
@@ -290,7 +293,7 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
         modifier.aspectRatio(1f).padding(3.dp).clip(CircleShape)
             .background(
                 when {
-                    trabalha -> if (extra) cores.primaryContainer else cores.primary
+                    trabalha -> if (extra) corDoExtra(c.cor) else cores.primary
                     ferias -> androidx.compose.ui.graphics.lerp(cores.surfaceContainerLow, cores.tertiary, 0.35f)
                     else -> Color.Transparent
                 },
@@ -303,7 +306,7 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
             "${dia.dayOfMonth}",
             style = MaterialTheme.typography.bodyLarge,
             color = when {
-                extra -> cores.onPrimaryContainer
+                extra -> Color.White
                 trabalha -> cores.onPrimary
                 else -> cores.onSurface
             },
@@ -338,7 +341,7 @@ private fun Legenda(cor: CorDestaque) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
             item("Trabalho") { Box(Modifier.size(14.dp).clip(CircleShape).background(cores.primary)) }
-            item("Extra") { Box(Modifier.size(14.dp).clip(CircleShape).background(cores.primaryContainer)) }
+            item("Extra") { Box(Modifier.size(14.dp).clip(CircleShape).background(corDoExtra(cor))) }
             item("Troca") { Box(Modifier.size(6.dp).clip(CircleShape).background(cores.error)) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
