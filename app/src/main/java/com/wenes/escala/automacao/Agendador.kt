@@ -51,7 +51,10 @@ object Agendador {
         }
         agendarMeiaNoite(contexto)
         runCatching { EscalaWidget().updateAll(contexto) }
-        AgendaGoogle.sincronizar(contexto, c, anterior)
+        val historico = AgendaGoogle.sincronizar(contexto, c, anterior)
+        if (historico != null && historico != c.historicoDesde) {
+            (contexto.applicationContext as EscalaApp).repositorio.marcarHistorico(historico)
+        }
     }
 
     /** O primeiro dia de trabalho, de hoje em diante, cujo horário do alarme ainda não passou. */
@@ -74,8 +77,10 @@ object Agendador {
         var dia = agora.toLocalDate().minusDays(1)
         repeat(800) {
             if (Escala.trabalha(c, dia)) {
-                val fim = dia.plusDays(if (c.saida <= c.entrada) 1 else 0).atTime(c.saida)
-                if (fim.isAfter(agora)) return fim
+                // O turno acaba na hora da Saída (no dia seguinte, se vira a noite); o alarme toca antes disso.
+                val fimDoTurno = dia.plusDays(if (c.saida <= c.entrada) 1 else 0).atTime(c.saida)
+                val alarme = fimDoTurno.minusMinutes(c.minutosAntesSaida.toLong())
+                if (alarme.isAfter(agora)) return alarme
             }
             dia = dia.plusDays(1)
         }

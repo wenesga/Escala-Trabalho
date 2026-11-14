@@ -25,6 +25,8 @@ data class Config(
     val detalhe: String = "Trabalho no posto de saúde",
     /** Períodos de férias: nesses dias não há trabalho, alarme nem evento de trabalho na agenda. */
     val ferias: List<Periodo> = emptyList(),
+    /** Desde quando o histórico já foi gravado na agenda. O passado só é gravado uma vez, nunca regravado. */
+    val historicoDesde: LocalDate? = null,
     val configurado: Boolean = false,
     /** Qualquer dia em que a pessoa trabalha: o ciclo se repete a partir dele. */
     val inicio: LocalDate = LocalDate.now(),
@@ -35,6 +37,8 @@ data class Config(
     val alarmeAtivo: Boolean = true,
     /** Segundo alarme, na hora da saída (o fim do turno). */
     val alarmeSaida: Boolean = true,
+    /** O alarme de saída toca tantos minutos antes do fim do turno (a hora da Saída). */
+    val minutosAntesSaida: Int = 30,
     val alarme: LocalTime = LocalTime.of(17, 0),
     val trocas: Map<LocalDate, Troca> = emptyMap(),
 )

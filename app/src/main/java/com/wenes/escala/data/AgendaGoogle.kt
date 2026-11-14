@@ -41,14 +41,16 @@ object AgendaGoogle {
      * [anterior] é a configuração de antes da mudança: título, descrição e local só são trocados nos eventos
      * que ainda estão como o app escreveu, para nunca apagar o que a pessoa editou à mão (como um ✅ no título).
      */
-    suspend fun sincronizar(contexto: Context, c: Config, anterior: Config? = null) = withContext(Dispatchers.IO) {
-        if (!temPermissao(contexto)) {
-            Log.i(TAG, "Sem permissão da agenda")
-            return@withContext
+    suspend fun sincronizar(contexto: Context, c: Config, anterior: Config? = null): LocalDate? =
+        withContext(Dispatchers.IO) {
+            if (!temPermissao(contexto)) {
+                Log.i(TAG, "Sem permissão da agenda")
+                return@withContext null
+            }
+            runCatching { executar(contexto.contentResolver, c, anterior) }
+                .onFailure { Log.e(TAG, "Falha ao sincronizar a agenda", it) }
+                .getOrNull()
         }
-        runCatching { executar(contexto.contentResolver, c, anterior) }
-            .onFailure { Log.e(TAG, "Falha ao sincronizar a agenda", it) }
-    }
 
     private fun tituloDe(c: Config) = c.titulo.trim().ifEmpty { TITULO }
 
@@ -57,8 +59,9 @@ object AgendaGoogle {
         listOf(c.detalhe.trim(), "Das ${Formato.hora(c.entrada)} às ${Formato.hora(c.saida)}")
             .filter { it.isNotEmpty() }.joinToString("\n") + "\n\n$MARCA"
 
-    private fun executar(cr: ContentResolver, c: Config, anterior: Config?) {
-        val calendario = calendarioPrincipal(cr) ?: return
+    /** Devolve desde quando o histórico está gravado (para o app anotar), ou null se não gravou nada. */
+    private fun executar(cr: ContentResolver, c: Config, anterior: Config?): LocalDate? {
+        val calendario = calendarioPrincipal(cr) ?: return null
         val hoje = LocalDate.now()
         val ativo = c.agenda && c.configurado
         // O histórico começa no primeiro dia de trabalho (no máximo 3 anos para trás).
@@ -145,12 +148,15 @@ object AgendaGoogle {
                 }
             }
         }
-        desejados.filter { it !in existentes }.sorted().forEach { dia ->
+        // O passado é gravado uma única vez: só dias antes do que o histórico já cobre (na 1ª vez, até ontem).
+        val passadoGravadoDesde = c.historicoDesde ?: hoje
+        desejados.filter { it !in existentes && (it >= hoje || it < passadoGravadoDesde) }.sorted().forEach { dia ->
             operacoes += ContentProviderOperation.newInsert(CalendarContract.Events.CONTENT_URI)
                 .withValues(evento(calendario, dia, titulo, descricao, local)).build()
         }
         Log.i(TAG, "Agenda $calendario: ${desejados.size} dias, ${existentes.size} já existem, ${operacoes.size} operações")
         operacoes.chunked(100).forEach { cr.applyBatch(CalendarContract.AUTHORITY, ArrayList(it)) }
+        return if (ativo) minOf(passadoGravadoDesde, inicioJanela) else null
     }
 
     /** Um único evento de dia inteiro cobrindo todo o período de férias. */

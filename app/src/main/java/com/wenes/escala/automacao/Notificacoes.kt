@@ -38,16 +38,20 @@ object Notificacoes {
     fun notificacaoAlarme(contexto: Context, c: Config, tipo: String): Notification {
         val saida = tipo == Agendador.TIPO_SAIDA
         val tela = PendingIntent.getActivity(
-            contexto, 10, Intent(contexto, AlarmeActivity::class.java).putExtra(Agendador.EXTRA_TIPO, tipo),
+            contexto, 10,
+            Intent(contexto, AlarmeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(Agendador.EXTRA_TIPO, tipo),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return NotificationCompat.Builder(contexto, CANAL_ALARME)
             .setSmallIcon(R.drawable.ic_notificacao)
             .setContentTitle(if (saida) "Saída" else "Trabalho")
-            .setContentText(if (saida) "Fim do trabalho às ${Formato.hora(c.saida)}" else Formato.horario(c))
+            .setContentText(if (saida) "Saída às ${Formato.hora(c.saida)}" else Formato.horario(c))
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
+            .setAutoCancel(false)
             .setContentIntent(tela)
             .setFullScreenIntent(tela, true)
             .addAction(0, "Soneca", acao(contexto, 11, AcaoAlarmeReceiver.ACAO_SONECA, tipo))

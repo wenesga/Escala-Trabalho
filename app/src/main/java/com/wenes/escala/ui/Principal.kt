@@ -120,6 +120,7 @@ private fun Principal(c: Config, aoAjustes: () -> Unit, aoTrocar: (LocalDate, Tr
             Text("Escala", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = aoAjustes) { Icon(Icons.Outlined.Settings, "Ajustes") }
         }
+        AvisoDePermissao(alarmeLigado = c.alarmeAtivo || c.alarmeSaida)
         CartaoHoje(c)
         Calendario(c, pager, aoDia = { diaAberto = it })
         Legenda(c.cor)

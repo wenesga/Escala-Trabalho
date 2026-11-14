@@ -35,6 +35,8 @@ class Repositorio(private val contexto: Context) {
         val ferias = stringPreferencesKey("ferias")
         val alarmeSaida = booleanPreferencesKey("alarme_saida")
         val titulo = stringPreferencesKey("titulo")
+        val historico = longPreferencesKey("historico_desde")
+        val minutosAntesSaida = intPreferencesKey("minutos_antes_saida")
     }
 
     val config: Flow<Config> = contexto.loja.data.map { p ->
@@ -55,6 +57,8 @@ class Repositorio(private val contexto: Context) {
             ferias = lerFerias(p[K.ferias]),
             alarmeSaida = p[K.alarmeSaida] ?: padrao.alarmeSaida,
             titulo = p[K.titulo] ?: padrao.titulo,
+            historicoDesde = p[K.historico]?.let(LocalDate::ofEpochDay),
+            minutosAntesSaida = p[K.minutosAntesSaida] ?: padrao.minutosAntesSaida,
             cor = p[K.cor]?.let { n -> CorDestaque.entries.firstOrNull { it.name == n } } ?: padrao.cor,
         )
     }
@@ -74,6 +78,8 @@ class Repositorio(private val contexto: Context) {
             p[K.agenda] = nova.agenda
             p[K.alarmeSaida] = nova.alarmeSaida
             p[K.titulo] = nova.titulo
+            nova.historicoDesde?.let { p[K.historico] = it.toEpochDay() }
+            p[K.minutosAntesSaida] = nova.minutosAntesSaida
             p[K.local] = nova.local
             p[K.detalhe] = nova.detalhe
             p[K.ferias] = nova.ferias.joinToString(";") { "${it.inicio.toEpochDay()}:${it.fim.toEpochDay()}" }
@@ -82,6 +88,11 @@ class Repositorio(private val contexto: Context) {
             p[K.trocas] = nova.trocas.entries.joinToString(";") { "${it.key.toEpochDay()}:${it.value.name}" }
         }
         Agendador.reagendar(contexto, nova, antes)
+    }
+
+    /** Anota até onde o histórico já foi gravado na agenda (não reagenda nada). */
+    suspend fun marcarHistorico(desde: LocalDate) {
+        contexto.loja.edit { it[K.historico] = desde.toEpochDay() }
     }
 
     private fun horaParaMinutos(t: LocalTime) = t.hour * 60 + t.minute

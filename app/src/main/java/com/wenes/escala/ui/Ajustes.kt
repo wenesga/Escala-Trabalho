@@ -80,6 +80,7 @@ fun Ajustes(
     var agenda by remember { mutableStateOf(c.agenda) }
     var ferias by remember { mutableStateOf(c.ferias) }
     var alarmeSaida by remember { mutableStateOf(c.alarmeSaida) }
+    var minutosAntesSaida by remember { mutableStateOf(c.minutosAntesSaida) }
     var titulo by remember { mutableStateOf(c.titulo) }
     var local by remember { mutableStateOf(c.local) }
     var detalhe by remember { mutableStateOf(c.detalhe) }
@@ -173,6 +174,8 @@ fun Ajustes(
                 Switch(checked = alarmeSaida, onCheckedChange = { alarmeSaida = it })
             }
         }
+        if (alarmeSaida) Minutos("Minutos antes da saída", minutosAntesSaida) { minutosAntesSaida = it }
+        AlarmeGarantido()
 
         Cartao {
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -199,7 +202,7 @@ fun Ajustes(
             onClick = {
                 aoSalvar(
                     c.copy(
-                        cor = cor, alarmeSaida = alarmeSaida, titulo = titulo, agenda = agenda, local = local, detalhe = detalhe, ferias = ferias, inicio = inicio, diasTrabalho = trabalho, diasFolga = folga,
+                        cor = cor, alarmeSaida = alarmeSaida, minutosAntesSaida = minutosAntesSaida, titulo = titulo, agenda = agenda, local = local, detalhe = detalhe, ferias = ferias, inicio = inicio, diasTrabalho = trabalho, diasFolga = folga,
                         entrada = entrada, saida = saida, alarmeAtivo = alarmeAtivo, alarme = alarme,
                     ),
                 )
@@ -253,6 +256,19 @@ private fun Contador(titulo: String, valor: Int, aoMudar: (Int) -> Unit) {
             IconButton(onClick = { if (valor > 1) aoMudar(valor - 1) }) { Icon(Icons.Outlined.Remove, "Menos") }
             Text("$valor", style = MaterialTheme.typography.titleLarge)
             IconButton(onClick = { if (valor < 14) aoMudar(valor + 1) }) { Icon(Icons.Outlined.Add, "Mais") }
+        }
+    }
+}
+
+/** Minutos de 5 em 5, de 0 a 120. */
+@Composable
+private fun Minutos(titulo: String, valor: Int, aoMudar: (Int) -> Unit) {
+    Cartao {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(titulo, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            IconButton(onClick = { if (valor > 0) aoMudar(valor - 5) }) { Icon(Icons.Outlined.Remove, "Menos") }
+            Text("$valor", style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = { if (valor < 120) aoMudar(valor + 5) }) { Icon(Icons.Outlined.Add, "Mais") }
         }
     }
 }
