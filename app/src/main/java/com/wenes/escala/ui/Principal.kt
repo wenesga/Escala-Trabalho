@@ -93,21 +93,23 @@ fun Raiz(repo: Repositorio, pedirNotificacao: () -> Unit, pedirAgenda: () -> Uni
     val scope = rememberCoroutineScope()
     var ajustes by remember { mutableStateOf(false) }
 
-    if (!c.configurado || ajustes) {
-        Ajustes(
-            c = c,
-            primeiraVez = !c.configurado,
-            aoCor = { cor -> if (c.configurado) scope.launch { repo.editar { it.copy(cor = cor) } } },
-            aoFerias = { lista -> if (c.configurado) scope.launch { repo.editar { it.copy(ferias = lista) } } },
-            aoSalvar = { nova ->
-                scope.launch { repo.editar { atual -> nova.copy(trocas = atual.trocas) } }
-                ajustes = false
-                if (nova.alarmeAtivo) pedirNotificacao()
-                if (nova.agenda) pedirAgenda()
-            },
-            aoVoltar = { ajustes = false },
-        )
+    if (!c.configurado) {
+        TelaPrimeiraVez(c) { nova ->
+            scope.launch { repo.editar { atual -> nova.copy(trocas = atual.trocas) } }
+            if (nova.alarmeAtivo) pedirNotificacao()
+        }
     } else {
+        // Ajustes é uma folha que sobe de baixo para cima e some arrastando para baixo.
+        // As mudanças valem na hora: cada uma grava, refaz o alarme, o widget e a agenda.
+        if (ajustes) {
+            FolhaAjustes(
+                c = c,
+                aoMudar = { mudar -> scope.launch { repo.editar(mudar) } },
+                pedirNotificacao = pedirNotificacao,
+                pedirAgenda = pedirAgenda,
+                aoFechar = { ajustes = false },
+            )
+        }
         Principal(
             c = c,
             aoAjustes = { ajustes = true },
