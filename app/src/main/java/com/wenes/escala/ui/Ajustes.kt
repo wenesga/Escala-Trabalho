@@ -51,6 +51,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -180,14 +181,21 @@ private fun ConteudoAjustes(
 
 @Composable
 private fun Categorias(c: Config, aoAbrir: (Pagina) -> Unit) {
-    Cartao {
-        Column {
-            Pagina.entries.forEach { pagina ->
+    // Um cartãozinho por categoria, discreto: só um tom acima da folha, com pouco espaço entre eles.
+    val cores = MaterialTheme.colorScheme
+    val escuro = cores.background.luminance() < 0.5f
+    val corDoCartinho = if (escuro) cores.surfaceContainerHigh else cores.surfaceContainer
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Pagina.entries.forEach { pagina ->
+            Card(
+                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { aoAbrir(pagina) },
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(containerColor = corDoCartinho),
+            ) {
                 ListItem(
                     headlineContent = { Text(pagina.titulo) },
                     supportingContent = { Text(resumo(pagina, c)) },
                     leadingContent = { Icon(pagina.icone, null) },
-                    modifier = Modifier.clickable { aoAbrir(pagina) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
             }
