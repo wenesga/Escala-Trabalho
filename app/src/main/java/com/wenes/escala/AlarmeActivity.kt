@@ -40,11 +40,13 @@ import com.wenes.escala.automacao.Agendador
 import com.wenes.escala.automacao.Notificacoes
 import com.wenes.escala.automacao.SomAlarmeService
 import com.wenes.escala.data.Config
+import com.wenes.escala.data.Escala
 import com.wenes.escala.data.CorDestaque
 import com.wenes.escala.data.Formato
 import com.wenes.escala.ui.EscalaTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.LocalTime
 
 /** Alarme em tela cheia, por cima da tela de bloqueio. */
@@ -104,7 +106,8 @@ private fun TelaAlarme(config: Config?, saida: Boolean, teste: Boolean, aoAdiar:
                 Text(
                     when {
                         teste -> "Teste do alarme"
-                        saida -> "Folga"
+                        // Na saída, diz como é o dia que começa: folga, ou trabalho se for dia de trabalhar de novo.
+                        saida -> if (config != null && Escala.trabalha(config, LocalDate.now())) "Trabalho" else "Folga"
                         else -> "Hoje é dia de trabalho"
                     },
                     style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,

@@ -10,6 +10,8 @@ import androidx.core.app.NotificationCompat
 import com.wenes.escala.AlarmeActivity
 import com.wenes.escala.R
 import com.wenes.escala.data.Config
+import com.wenes.escala.data.Escala
+import java.time.LocalDate
 import com.wenes.escala.data.Formato
 
 object Notificacoes {
@@ -46,7 +48,14 @@ object Notificacoes {
         )
         return NotificationCompat.Builder(contexto, CANAL_ALARME)
             .setSmallIcon(R.drawable.ic_notificacao)
-            .setContentTitle(if (teste) "Teste do alarme" else if (saida) "Folga" else "Trabalho")
+            .setContentTitle(
+                when {
+                    teste -> "Teste do alarme"
+                    // Na saída, diz como é o dia que começa: folga, ou trabalho se foi combinado de trabalhar de novo.
+                    saida -> if (Escala.trabalha(c, LocalDate.now())) "Trabalho" else "Folga"
+                    else -> "Trabalho"
+                },
+            )
             .setContentText(
                 when {
                     teste -> "Está tudo certo"
