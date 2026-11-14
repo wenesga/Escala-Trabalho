@@ -62,15 +62,17 @@ private fun Conteudo(c: Config) {
         .clickable(actionStartActivity<MainActivity>())
 
     when {
-        // Baixo: uma linha só, com o título e a data, para nada ficar cortado.
+        // Baixo: uma linha só, com o título e, na frente dele, o detalhe (próximo dia de trabalho ou horário),
+        // que no tamanho largo cabe ao lado e não precisa ir para baixo.
         altura < 70.dp -> Row(
             moldura.padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(titulo, style = TextStyle(color = texto, fontSize = 20.sp, fontWeight = FontWeight.Bold))
-            // Espaço na frente da data, para não ficar grudada no título.
-            Spacer(GlanceModifier.width(16.dp))
-            Text(Formato.dia(hoje), style = TextStyle(color = texto, fontSize = 12.sp))
+            if (detalhe.isNotEmpty()) {
+                Spacer(GlanceModifier.width(16.dp))
+                Text(detalhe, style = TextStyle(color = texto, fontSize = 14.sp), maxLines = 1)
+            }
         }
         // Médio: data e título.
         altura < 110.dp -> Column(
