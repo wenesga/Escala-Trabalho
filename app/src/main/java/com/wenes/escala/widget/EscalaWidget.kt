@@ -95,8 +95,7 @@ private fun Conteudo(c: Config) {
             val largura = LocalSize.current.width.value
             val titulo_sp = minOf(altura.value * 0.17f, (largura - 32f) / 4.6f).coerceIn(28f, 36f)
             val data_sp = (titulo_sp * 0.40f).coerceIn(12f, 15f)
-            // O detalhe ("Próximo: Dom, 15/11") encolhe até caber inteiro numa linha, mesmo no quadrado.
-            val detalhe_sp = minOf(titulo_sp * 0.46f, (largura - 32f) / 11f).coerceIn(9f, 17f)
+            val detalhe_sp = minOf(titulo_sp * 0.46f, (largura - 32f) / 9.5f).coerceIn(12f, 17f)
             val respiro = (titulo_sp * 0.16f).dp
             Column(
                 moldura.padding(16.dp),
@@ -107,7 +106,7 @@ private fun Conteudo(c: Config) {
                 Text(titulo, style = TextStyle(color = texto, fontSize = titulo_sp.sp, fontWeight = FontWeight.Bold))
                 if (detalhe.isNotEmpty()) {
                     Spacer(GlanceModifier.height(respiro))
-                    Text(detalhe, style = TextStyle(color = texto, fontSize = detalhe_sp.sp), maxLines = 1)
+                    Text(detalhe, style = TextStyle(color = texto, fontSize = detalhe_sp.sp), maxLines = 2)
                 }
             }
         }
