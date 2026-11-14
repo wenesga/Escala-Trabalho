@@ -156,7 +156,9 @@ fun AlarmeGarantido() {
     Card(
         Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(
+            containerColor = LocalCorCartao.current ?: MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
     ) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Alarme garantido", style = MaterialTheme.typography.titleMedium)

@@ -49,6 +49,8 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -124,15 +126,21 @@ fun FolhaAjustes(
     aoFechar: () -> Unit,
 ) {
     val estado = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    // Fundo da folha igual ao da tela, para os cartões das linhas aparecerem sobre ele.
+    // A folha inteira tem a cor do fundo do calendário (mais clara que a tela, senão se mistura com ela),
+    // e as linhas ficam direto sobre ela, sem caixa por dentro.
     ModalBottomSheet(
         onDismissRequest = aoFechar,
         sheetState = estado,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-        ConteudoAjustes(c, aoMudar, pedirNotificacao, pedirAgenda, aoFechar)
+        CompositionLocalProvider(LocalCorCartao provides Color.Transparent) {
+            ConteudoAjustes(c, aoMudar, pedirNotificacao, pedirAgenda, aoFechar)
+        }
     }
 }
+
+/** Cor dos cartões das linhas de Ajustes: na folha, um tom acima dela; fora dela, o padrão. */
+internal val LocalCorCartao = compositionLocalOf<Color?> { null }
 
 @Composable
 private fun ConteudoAjustes(
@@ -339,7 +347,9 @@ private fun Cartao(modifier: Modifier = Modifier, conteudo: @Composable () -> Un
     Card(
         modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(
+            containerColor = LocalCorCartao.current ?: MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
     ) { conteudo() }
 }
 
