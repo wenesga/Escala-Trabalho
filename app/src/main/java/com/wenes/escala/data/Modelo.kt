@@ -17,6 +17,8 @@ data class Config(
     val cor: CorDestaque = CorDestaque.AZUL,
     /** Marca os dias de trabalho no Google Agenda, como evento de dia inteiro. */
     val agenda: Boolean = false,
+    /** Título dos eventos de trabalho no Google Agenda. */
+    val titulo: String = "Trabalho",
     /** Endereço do local de trabalho, gravado no campo Local do evento. */
     val local: String = "UBS Parque das Colinas, R. 7-A, 00 - Arraias, TO, 77330-000, Brasil",
     /** Texto da descrição do evento, acima do horário. */
@@ -31,6 +33,8 @@ data class Config(
     val entrada: LocalTime = LocalTime.of(20, 0),
     val saida: LocalTime = LocalTime.of(6, 0),
     val alarmeAtivo: Boolean = true,
+    /** Segundo alarme, na hora da saída (o fim do turno). */
+    val alarmeSaida: Boolean = true,
     val alarme: LocalTime = LocalTime.of(17, 0),
     val trocas: Map<LocalDate, Troca> = emptyMap(),
 )

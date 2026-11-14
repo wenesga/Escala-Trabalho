@@ -25,7 +25,7 @@ private fun BroadcastReceiver.emSegundoPlano(bloco: suspend () -> Unit) {
 class AlarmeReceiver : BroadcastReceiver() {
     override fun onReceive(contexto: Context, intent: Intent) {
         val app = contexto.applicationContext
-        SomAlarmeService.iniciar(app)
+        SomAlarmeService.iniciar(app, intent.getStringExtra(Agendador.EXTRA_TIPO) ?: Agendador.TIPO_ENTRADA)
         emSegundoPlano { Agendador.reagendar(app) }
     }
 }
@@ -50,7 +50,7 @@ class ReagendarReceiver : BroadcastReceiver() {
 class AcaoAlarmeReceiver : BroadcastReceiver() {
     override fun onReceive(contexto: Context, intent: Intent) {
         when (intent.action) {
-            ACAO_SONECA -> soneca(contexto)
+            ACAO_SONECA -> soneca(contexto, intent.getStringExtra(Agendador.EXTRA_TIPO) ?: Agendador.TIPO_ENTRADA)
             ACAO_PARAR -> SomAlarmeService.parar(contexto)
         }
     }
@@ -59,9 +59,9 @@ class AcaoAlarmeReceiver : BroadcastReceiver() {
         const val ACAO_PARAR = "com.wenes.escala.PARAR_ALARME"
         const val ACAO_SONECA = "com.wenes.escala.SONECA_ALARME"
 
-        fun soneca(contexto: Context) {
+        fun soneca(contexto: Context, tipo: String) {
             SomAlarmeService.parar(contexto)
-            Agendador.agendarSoneca(contexto, LocalDateTime.now().plusMinutes(Agendador.SONECA_MINUTOS))
+            Agendador.agendarSoneca(contexto, LocalDateTime.now().plusMinutes(Agendador.SONECA_MINUTOS), tipo)
         }
     }
 }

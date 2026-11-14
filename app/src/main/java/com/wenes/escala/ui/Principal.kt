@@ -163,10 +163,8 @@ private fun CartaoHoje(c: Config) {
                     Text("Próximo trabalho: ${Formato.dia(it)}", style = MaterialTheme.typography.titleMedium)
                 }
             }
-            Text(
-                Feriados.nome(hoje)?.let { "Feriado: $it" } ?: "Hoje não é feriado",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            // Só aparece quando hoje é feriado.
+            Feriados.nome(hoje)?.let { Text("Feriado: $it", style = MaterialTheme.typography.bodyMedium) }
         }
     }
 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.wenes.escala.automacao.AcaoAlarmeReceiver
+import com.wenes.escala.automacao.Agendador
 import com.wenes.escala.automacao.Notificacoes
 import com.wenes.escala.automacao.SomAlarmeService
 import com.wenes.escala.data.Config
@@ -61,13 +62,16 @@ class AlarmeActivity : ComponentActivity() {
             finish()
         }
 
+        val tipo = intent.getStringExtra(Agendador.EXTRA_TIPO) ?: Agendador.TIPO_ENTRADA
+
         setContent {
             val config by produceState<Config?>(null) { value = app.repositorio.atual() }
             EscalaTheme(config?.cor ?: CorDestaque.AZUL) {
                 TelaAlarme(
                     config = config,
+                    saida = tipo == Agendador.TIPO_SAIDA,
                     aoAdiar = {
-                        AcaoAlarmeReceiver.soneca(this)
+                        AcaoAlarmeReceiver.soneca(this, tipo)
                         finish()
                     },
                     aoParar = {
@@ -81,7 +85,7 @@ class AlarmeActivity : ComponentActivity() {
 }
 
 @Composable
-private fun TelaAlarme(config: Config?, aoAdiar: () -> Unit, aoParar: () -> Unit) {
+private fun TelaAlarme(config: Config?, saida: Boolean, aoAdiar: () -> Unit, aoParar: () -> Unit) {
     var agora by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -96,10 +100,13 @@ private fun TelaAlarme(config: Config?, aoAdiar: () -> Unit, aoParar: () -> Unit
                 Text("Escala", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 Text(Formato.hora(agora), style = MaterialTheme.typography.displayLarge)
                 Spacer(Modifier.weight(1f))
-                Text("Hoje é dia de trabalho", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Text(
+                    if (saida) "Fim do trabalho" else "Hoje é dia de trabalho",
+                    style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,
+                )
                 if (config != null) {
                     Text(
-                        Formato.horario(config),
+                        if (saida) "Saída às ${Formato.hora(config.saida)}" else Formato.horario(config),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

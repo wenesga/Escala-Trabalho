@@ -35,28 +35,29 @@ object Notificacoes {
         contexto.getSystemService(NotificationManager::class.java).createNotificationChannel(canal)
     }
 
-    fun notificacaoAlarme(contexto: Context, c: Config): Notification {
+    fun notificacaoAlarme(contexto: Context, c: Config, tipo: String): Notification {
+        val saida = tipo == Agendador.TIPO_SAIDA
         val tela = PendingIntent.getActivity(
-            contexto, 10, Intent(contexto, AlarmeActivity::class.java),
+            contexto, 10, Intent(contexto, AlarmeActivity::class.java).putExtra(Agendador.EXTRA_TIPO, tipo),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return NotificationCompat.Builder(contexto, CANAL_ALARME)
             .setSmallIcon(R.drawable.ic_notificacao)
-            .setContentTitle("Trabalho")
-            .setContentText(Formato.horario(c))
+            .setContentTitle(if (saida) "Saída" else "Trabalho")
+            .setContentText(if (saida) "Fim do trabalho às ${Formato.hora(c.saida)}" else Formato.horario(c))
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setOngoing(true)
             .setContentIntent(tela)
             .setFullScreenIntent(tela, true)
-            .addAction(0, "Soneca", acao(contexto, 11, AcaoAlarmeReceiver.ACAO_SONECA))
-            .addAction(0, "Parar", acao(contexto, 12, AcaoAlarmeReceiver.ACAO_PARAR))
+            .addAction(0, "Soneca", acao(contexto, 11, AcaoAlarmeReceiver.ACAO_SONECA, tipo))
+            .addAction(0, "Parar", acao(contexto, 12, AcaoAlarmeReceiver.ACAO_PARAR, tipo))
             .setTimeoutAfter(ALARME_DURACAO_MS)
             .build()
     }
 
-    private fun acao(contexto: Context, codigo: Int, nome: String) = PendingIntent.getBroadcast(
-        contexto, codigo, Intent(contexto, AcaoAlarmeReceiver::class.java).setAction(nome),
+    private fun acao(contexto: Context, codigo: Int, nome: String, tipo: String) = PendingIntent.getBroadcast(
+        contexto, codigo, Intent(contexto, AcaoAlarmeReceiver::class.java).setAction(nome).putExtra(Agendador.EXTRA_TIPO, tipo),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 }

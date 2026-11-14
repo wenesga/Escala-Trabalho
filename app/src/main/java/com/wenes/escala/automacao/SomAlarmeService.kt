@@ -34,8 +34,9 @@ class SomAlarmeService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val config = runBlocking { (application as EscalaApp).repositorio.atual() }
+        val tipo = intent?.getStringExtra(Agendador.EXTRA_TIPO) ?: Agendador.TIPO_ENTRADA
         ServiceCompat.startForeground(
-            this, Notificacoes.ID_ALARME, Notificacoes.notificacaoAlarme(this, config),
+            this, Notificacoes.ID_ALARME, Notificacoes.notificacaoAlarme(this, config, tipo),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0,
         )
         tocar()
@@ -80,8 +81,10 @@ class SomAlarmeService : Service() {
     companion object {
         private const val TAG = "SomAlarmeService"
 
-        fun iniciar(contexto: Context) {
-            ContextCompat.startForegroundService(contexto, Intent(contexto, SomAlarmeService::class.java))
+        fun iniciar(contexto: Context, tipo: String) {
+            ContextCompat.startForegroundService(
+                contexto, Intent(contexto, SomAlarmeService::class.java).putExtra(Agendador.EXTRA_TIPO, tipo),
+            )
         }
 
         fun parar(contexto: Context) {

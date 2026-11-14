@@ -79,6 +79,8 @@ fun Ajustes(
     var cor by remember { mutableStateOf(c.cor) }
     var agenda by remember { mutableStateOf(c.agenda) }
     var ferias by remember { mutableStateOf(c.ferias) }
+    var alarmeSaida by remember { mutableStateOf(c.alarmeSaida) }
+    var titulo by remember { mutableStateOf(c.titulo) }
     var local by remember { mutableStateOf(c.local) }
     var detalhe by remember { mutableStateOf(c.detalhe) }
     var inicio by remember { mutableStateOf(c.inicio) }
@@ -167,11 +169,22 @@ fun Ajustes(
 
         Cartao {
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Alarme de saída", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Switch(checked = alarmeSaida, onCheckedChange = { alarmeSaida = it })
+            }
+        }
+
+        Cartao {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Google Agenda", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = agenda, onCheckedChange = { agenda = it })
             }
         }
         if (agenda) {
+            OutlinedTextField(
+                value = titulo, onValueChange = { titulo = it },
+                label = { Text("Título") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+            )
             OutlinedTextField(
                 value = detalhe, onValueChange = { detalhe = it },
                 label = { Text("Descrição") }, modifier = Modifier.fillMaxWidth(),
@@ -186,7 +199,7 @@ fun Ajustes(
             onClick = {
                 aoSalvar(
                     c.copy(
-                        cor = cor, agenda = agenda, local = local, detalhe = detalhe, ferias = ferias, inicio = inicio, diasTrabalho = trabalho, diasFolga = folga,
+                        cor = cor, alarmeSaida = alarmeSaida, titulo = titulo, agenda = agenda, local = local, detalhe = detalhe, ferias = ferias, inicio = inicio, diasTrabalho = trabalho, diasFolga = folga,
                         entrada = entrada, saida = saida, alarmeAtivo = alarmeAtivo, alarme = alarme,
                     ),
                 )

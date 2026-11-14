@@ -33,6 +33,8 @@ class Repositorio(private val contexto: Context) {
         val local = stringPreferencesKey("local")
         val detalhe = stringPreferencesKey("detalhe")
         val ferias = stringPreferencesKey("ferias")
+        val alarmeSaida = booleanPreferencesKey("alarme_saida")
+        val titulo = stringPreferencesKey("titulo")
     }
 
     val config: Flow<Config> = contexto.loja.data.map { p ->
@@ -51,6 +53,8 @@ class Repositorio(private val contexto: Context) {
             local = p[K.local] ?: padrao.local,
             detalhe = p[K.detalhe] ?: padrao.detalhe,
             ferias = lerFerias(p[K.ferias]),
+            alarmeSaida = p[K.alarmeSaida] ?: padrao.alarmeSaida,
+            titulo = p[K.titulo] ?: padrao.titulo,
             cor = p[K.cor]?.let { n -> CorDestaque.entries.firstOrNull { it.name == n } } ?: padrao.cor,
         )
     }
@@ -67,6 +71,8 @@ class Repositorio(private val contexto: Context) {
             p[K.saida] = horaParaMinutos(nova.saida)
             p[K.cor] = nova.cor.name
             p[K.agenda] = nova.agenda
+            p[K.alarmeSaida] = nova.alarmeSaida
+            p[K.titulo] = nova.titulo
             p[K.local] = nova.local
             p[K.detalhe] = nova.detalhe
             p[K.ferias] = nova.ferias.joinToString(";") { "${it.inicio.toEpochDay()}:${it.fim.toEpochDay()}" }

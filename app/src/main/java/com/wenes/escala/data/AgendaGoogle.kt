@@ -22,11 +22,14 @@ import java.time.ZoneOffset
  */
 object AgendaGoogle {
 
+    private data class Existente(val id: Long, val titulo: String?, val descricao: String?, val local: String?)
+
     private const val TAG = "AgendaGoogle"
     private const val MARCA ="Criado pelo app Escala"
     private const val TITULO = "Trabalho"
     private const val TITULO_FERIAS = "Férias"
     private const val DIAS_A_FRENTE = 365L
+    private const val MAX_DIAS_ATRAS = 1100L
 
     fun temPermissao(contexto: Context): Boolean =
         listOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR).all {
@@ -46,16 +49,18 @@ object AgendaGoogle {
     private fun executar(cr: ContentResolver, c: Config) {
         val calendario = calendarioPrincipal(cr) ?: return
         val hoje = LocalDate.now()
-        val inicioMs = hoje.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val ativo = c.agenda && c.configurado
+        // O histórico começa no primeiro dia de trabalho (no máximo 3 anos para trás).
+        val inicioJanela = if (ativo) minOf(c.inicio, hoje).coerceAtLeast(hoje.minusDays(MAX_DIAS_ATRAS)) else hoje
+        val inicioMs = inicioJanela.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
         // A descrição leva o horário e termina com a marca do app (é por ela que os eventos são reconhecidos).
         val descricao = listOf(c.detalhe.trim(), "Das ${Formato.hora(c.entrada)} às ${Formato.hora(c.saida)}")
             .filter { it.isNotEmpty() }.joinToString("\n") + "\n\n$MARCA"
         val local = c.local.trim()
+        val titulo = c.titulo.trim().ifEmpty { TITULO }
 
-        val ativo = c.agenda && c.configurado
-
-        val existentes = HashMap<LocalDate, MutableList<Triple<Long, String?, String?>>>()
+        val existentes = HashMap<LocalDate, MutableList<Existente>>()
         val feriasExistentes = mutableListOf<Pair<Long, Periodo>>()
         // Pega os eventos do app que ainda não terminaram (o fim é exclusivo: o de ontem fica de fora).
         cr.query(
@@ -77,23 +82,26 @@ object AgendaGoogle {
                     feriasExistentes += cursor.getLong(0) to Periodo(inicio, fim)
                 } else {
                     existentes.getOrPut(inicio) { mutableListOf() }
-                        .add(Triple(cursor.getLong(0), cursor.getString(2), cursor.getString(3)))
+                        .add(Existente(cursor.getLong(0), cursor.getString(4), cursor.getString(2), cursor.getString(3)))
                 }
             }
         }
 
         val desejados: Set<LocalDate> = if (ativo) {
-            (0 until DIAS_A_FRENTE).map { hoje.plusDays(it) }.filter { Escala.trabalha(c, it) }.toSet()
+            generateSequence(inicioJanela) { it.plusDays(1) }
+                .takeWhile { it < hoje.plusDays(DIAS_A_FRENTE) }
+                .filter { Escala.trabalha(c, it) }.toSet()
         } else {
             emptySet()
         }
-        // Férias que já terminaram ficam como estão (não mexe no passado).
-        val feriasDesejadas: Set<Periodo> = if (ativo) c.ferias.filter { it.fim >= hoje }.toSet() else emptySet()
+        // As férias passadas também entram no histórico, mas nunca são apagadas pelo app.
+        val feriasDesejadas: Set<Periodo> = if (ativo) c.ferias.filter { it.fim >= inicioJanela }.toSet() else emptySet()
 
         val operacoes = ArrayList<ContentProviderOperation>()
         val feriasVistas = HashSet<Periodo>()
         feriasExistentes.forEach { (id, periodo) ->
-            if (periodo !in feriasDesejadas || !feriasVistas.add(periodo)) {
+            val repetido = !feriasVistas.add(periodo)
+            if (repetido || (periodo.fim >= hoje && periodo !in feriasDesejadas)) {
                 operacoes += ContentProviderOperation.newDelete(
                     ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, id),
                 ).build()
@@ -104,13 +112,16 @@ object AgendaGoogle {
                 .withValues(eventoFerias(calendario, periodo)).build()
         }
         existentes.forEach { (dia, eventos) ->
-            eventos.forEachIndexed { i, (id, descricaoAtual, localAtual) ->
+            eventos.forEachIndexed { i, (id, tituloAtual, descricaoAtual, localAtual) ->
                 val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, id)
-                if (dia !in desejados || i > 0) {
+                // O passado é histórico: só se apaga repetido do mesmo dia, e o texto antigo (com o horário da época) fica.
+                val passado = dia < hoje
+                if (i > 0 || (!passado && dia !in desejados)) {
                     operacoes += ContentProviderOperation.newDelete(uri).build()
-                } else if (descricaoAtual != descricao || (localAtual ?: "") != local) {
-                    // O horário, o texto ou o local mudou: atualiza o evento que já existe.
+                } else if (!passado && (tituloAtual != titulo || descricaoAtual != descricao || (localAtual ?: "") != local)) {
+                    // O título, o horário, o texto ou o local mudou: atualiza o evento que já existe.
                     operacoes += ContentProviderOperation.newUpdate(uri)
+                        .withValue(CalendarContract.Events.TITLE, titulo)
                         .withValue(CalendarContract.Events.DESCRIPTION, descricao)
                         .withValue(CalendarContract.Events.EVENT_LOCATION, local).build()
                 }
@@ -118,7 +129,7 @@ object AgendaGoogle {
         }
         desejados.filter { it !in existentes }.sorted().forEach { dia ->
             operacoes += ContentProviderOperation.newInsert(CalendarContract.Events.CONTENT_URI)
-                .withValues(evento(calendario, dia, descricao, local)).build()
+                .withValues(evento(calendario, dia, titulo, descricao, local)).build()
         }
         Log.i(TAG, "Agenda $calendario: ${desejados.size} dias, ${existentes.size} já existem, ${operacoes.size} operações")
         operacoes.chunked(100).forEach { cr.applyBatch(CalendarContract.AUTHORITY, ArrayList(it)) }
@@ -138,9 +149,9 @@ object AgendaGoogle {
     }
 
     /** Evento de dia inteiro: início à meia-noite UTC e fim na meia-noite seguinte, sem horário. */
-    private fun evento(calendario: Long, dia: LocalDate, descricao: String, local: String) = ContentValues().apply {
+    private fun evento(calendario: Long, dia: LocalDate, titulo: String, descricao: String, local: String) = ContentValues().apply {
         put(CalendarContract.Events.CALENDAR_ID, calendario)
-        put(CalendarContract.Events.TITLE, TITULO)
+        put(CalendarContract.Events.TITLE, titulo)
         put(CalendarContract.Events.DESCRIPTION, descricao)
         put(CalendarContract.Events.EVENT_LOCATION, local)
         put(CalendarContract.Events.ALL_DAY, 1)

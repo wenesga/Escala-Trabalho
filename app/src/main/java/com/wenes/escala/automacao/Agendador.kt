@@ -20,6 +20,12 @@ object Agendador {
 
     const val SONECA_MINUTOS = 10L
 
+    /** Qual alarme está tocando: o de antes do trabalho (entrada) ou o do fim do turno (saída). */
+    const val EXTRA_TIPO = "tipo"
+    const val TIPO_ENTRADA = "entrada"
+    const val TIPO_SAIDA = "saida"
+
+    private const val REQ_SAIDA = 5
     private const val REQ_ALARME = 1
     private const val REQ_SONECA = 2
     private const val REQ_MEIA_NOITE = 3
@@ -36,6 +42,12 @@ object Agendador {
             gerenciador(contexto).cancel(pendente(contexto, REQ_ALARME))
         } else {
             definirAlarme(contexto, REQ_ALARME, quando)
+        }
+        val saida = proximaSaida(c)
+        if (saida == null) {
+            gerenciador(contexto).cancel(pendente(contexto, REQ_SAIDA, TIPO_SAIDA))
+        } else {
+            definirAlarme(contexto, REQ_SAIDA, saida, TIPO_SAIDA)
         }
         agendarMeiaNoite(contexto)
         runCatching { EscalaWidget().updateAll(contexto) }
@@ -56,14 +68,29 @@ object Agendador {
         return null
     }
 
-    fun agendarSoneca(contexto: Context, quando: LocalDateTime) = definirAlarme(contexto, REQ_SONECA, quando)
+    /** O fim do próximo turno ainda por acabar. Se o turno vira a noite, termina no dia seguinte. */
+    fun proximaSaida(c: Config, agora: LocalDateTime = LocalDateTime.now()): LocalDateTime? {
+        if (!c.configurado || !c.alarmeSaida) return null
+        var dia = agora.toLocalDate().minusDays(1)
+        repeat(800) {
+            if (Escala.trabalha(c, dia)) {
+                val fim = dia.plusDays(if (c.saida <= c.entrada) 1 else 0).atTime(c.saida)
+                if (fim.isAfter(agora)) return fim
+            }
+            dia = dia.plusDays(1)
+        }
+        return null
+    }
+
+    fun agendarSoneca(contexto: Context, quando: LocalDateTime, tipo: String = TIPO_ENTRADA) =
+        definirAlarme(contexto, REQ_SONECA, quando, tipo)
 
     fun cancelarSoneca(contexto: Context) {
         gerenciador(contexto).cancel(pendente(contexto, REQ_SONECA))
     }
 
     /** setAlarmClock aparece como alarme na barra de status e acorda o celular, como o app Relógio. */
-    private fun definirAlarme(contexto: Context, codigo: Int, quando: LocalDateTime) {
+    private fun definirAlarme(contexto: Context, codigo: Int, quando: LocalDateTime, tipo: String = TIPO_ENTRADA) {
         val am = gerenciador(contexto)
         val ms = emMillis(quando)
         if (podeExato(contexto)) {
@@ -71,9 +98,9 @@ object Agendador {
                 contexto, REQ_ABRIR, Intent(contexto, MainActivity::class.java),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
-            am.setAlarmClock(AlarmManager.AlarmClockInfo(ms, abrir), pendente(contexto, codigo))
+            am.setAlarmClock(AlarmManager.AlarmClockInfo(ms, abrir), pendente(contexto, codigo, tipo))
         } else {
-            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, ms, pendente(contexto, codigo))
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, ms, pendente(contexto, codigo, tipo))
         }
     }
 
@@ -88,8 +115,8 @@ object Agendador {
 
     private fun gerenciador(contexto: Context) = contexto.getSystemService(AlarmManager::class.java)
 
-    private fun pendente(contexto: Context, codigo: Int) = PendingIntent.getBroadcast(
-        contexto, codigo, Intent(contexto, AlarmeReceiver::class.java),
+    private fun pendente(contexto: Context, codigo: Int, tipo: String = TIPO_ENTRADA) = PendingIntent.getBroadcast(
+        contexto, codigo, Intent(contexto, AlarmeReceiver::class.java).putExtra(EXTRA_TIPO, tipo),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
