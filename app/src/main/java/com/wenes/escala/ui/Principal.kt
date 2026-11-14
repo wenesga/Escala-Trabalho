@@ -100,18 +100,27 @@ fun Raiz(repo: Repositorio, pedirNotificacao: () -> Unit, pedirAgenda: () -> Uni
                         val igualAoPadrao = troca != null && (troca == Troca.TRABALHA) == Escala.padrao(atual, dia)
                         if (troca == null || igualAoPadrao) trocas.remove(dia) else trocas[dia] = troca
 
-                        // Cobrir um dia de folga (a pedido do colega) marca sozinho a folga de compensação 3 dias depois;
-                        // desfazer a troca desfaz a compensação.
+                        // Cobrir um dia de folga (a pedido do colega) marca sozinho a folga de compensação 3 dias depois.
+                        // A troca é uma só: desfazer qualquer um dos dois lados desfaz o outro, mas só enquanto
+                        // ainda não passou (o que já passou é registro e não se desfaz).
                         if (atual.compensarTroca) {
+                            val hoje = LocalDate.now()
                             val compensacao = dia.plusDays(DIAS_ATE_COMPENSACAO)
+                            val origem = dia.minusDays(DIAS_ATE_COMPENSACAO)
                             val diaDeFolga = !Escala.padrao(atual, dia)
                             val cobre = trocas[dia] == Troca.TRABALHA && diaDeFolga
                             val cobria = anterior == Troca.TRABALHA && diaDeFolga
                             if (cobre && Escala.trabalha(atual.copy(trocas = trocas), compensacao)) {
                                 trocas[compensacao] = Troca.FOLGA
-                            } else if (cobria && !cobre && trocas[compensacao] == Troca.FOLGA) {
+                            } else if (cobria && !cobre && dia >= hoje && trocas[compensacao] == Troca.FOLGA) {
+                                // Desfez o extra: a compensação vai junto.
                                 trocas.remove(compensacao)
                             }
+                            // Desfez a compensação (voltou o dia para o padrão): o extra que a originou vai junto.
+                            val desfezCompensacao = anterior == Troca.FOLGA && trocas[dia] != Troca.FOLGA &&
+                                Escala.padrao(atual, dia)
+                            val origemEhExtra = trocas[origem] == Troca.TRABALHA && !Escala.padrao(atual, origem)
+                            if (desfezCompensacao && origemEhExtra && origem >= hoje) trocas.remove(origem)
                         }
                         atual.copy(trocas = trocas)
                     }
