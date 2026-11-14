@@ -81,6 +81,7 @@ fun Ajustes(
     var ferias by remember { mutableStateOf(c.ferias) }
     var alarmeSaida by remember { mutableStateOf(c.alarmeSaida) }
     var minutosAntesSaida by remember { mutableStateOf(c.minutosAntesSaida) }
+    var compensarTroca by remember { mutableStateOf(c.compensarTroca) }
     var titulo by remember { mutableStateOf(c.titulo) }
     var local by remember { mutableStateOf(c.local) }
     var detalhe by remember { mutableStateOf(c.detalhe) }
@@ -179,6 +180,13 @@ fun Ajustes(
 
         Cartao {
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Compensar troca", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Switch(checked = compensarTroca, onCheckedChange = { compensarTroca = it })
+            }
+        }
+
+        Cartao {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Google Agenda", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = agenda, onCheckedChange = { agenda = it })
             }
@@ -202,7 +210,7 @@ fun Ajustes(
             onClick = {
                 aoSalvar(
                     c.copy(
-                        cor = cor, alarmeSaida = alarmeSaida, minutosAntesSaida = minutosAntesSaida, titulo = titulo, agenda = agenda, local = local, detalhe = detalhe, ferias = ferias, inicio = inicio, diasTrabalho = trabalho, diasFolga = folga,
+                        cor = cor, alarmeSaida = alarmeSaida, minutosAntesSaida = minutosAntesSaida, compensarTroca = compensarTroca, titulo = titulo, agenda = agenda, local = local, detalhe = detalhe, ferias = ferias, inicio = inicio, diasTrabalho = trabalho, diasFolga = folga,
                         entrada = entrada, saida = saida, alarmeAtivo = alarmeAtivo, alarme = alarme,
                     ),
                 )

@@ -37,6 +37,7 @@ class Repositorio(private val contexto: Context) {
         val titulo = stringPreferencesKey("titulo")
         val historico = longPreferencesKey("historico_desde")
         val minutosAntesSaida = intPreferencesKey("minutos_antes_saida")
+        val compensarTroca = booleanPreferencesKey("compensar_troca")
     }
 
     val config: Flow<Config> = contexto.loja.data.map { p ->
@@ -59,6 +60,7 @@ class Repositorio(private val contexto: Context) {
             titulo = p[K.titulo] ?: padrao.titulo,
             historicoDesde = p[K.historico]?.let(LocalDate::ofEpochDay),
             minutosAntesSaida = p[K.minutosAntesSaida] ?: padrao.minutosAntesSaida,
+            compensarTroca = p[K.compensarTroca] ?: padrao.compensarTroca,
             cor = p[K.cor]?.let { n -> CorDestaque.entries.firstOrNull { it.name == n } } ?: padrao.cor,
         )
     }
@@ -80,6 +82,7 @@ class Repositorio(private val contexto: Context) {
             p[K.titulo] = nova.titulo
             nova.historicoDesde?.let { p[K.historico] = it.toEpochDay() }
             p[K.minutosAntesSaida] = nova.minutosAntesSaida
+            p[K.compensarTroca] = nova.compensarTroca
             p[K.local] = nova.local
             p[K.detalhe] = nova.detalhe
             p[K.ferias] = nova.ferias.joinToString(";") { "${it.inicio.toEpochDay()}:${it.fim.toEpochDay()}" }

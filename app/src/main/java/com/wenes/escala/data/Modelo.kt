@@ -37,11 +37,19 @@ data class Config(
     val alarmeAtivo: Boolean = true,
     /** Segundo alarme, na hora da saída (o fim do turno). */
     val alarmeSaida: Boolean = true,
+    /** Ao cobrir o dia de um colega, marca sozinho a folga de compensação, [DIAS_ATE_COMPENSACAO] dias depois. */
+    val compensarTroca: Boolean = true,
     /** O alarme de saída toca tantos minutos antes do fim do turno (a hora da Saída). */
     val minutosAntesSaida: Int = 30,
     val alarme: LocalTime = LocalTime.of(17, 0),
     val trocas: Map<LocalDate, Troca> = emptyMap(),
 )
+
+/**
+ * Quem pede é sempre o colega: a pessoa cobre o dia dele e, no ritmo de dia sim, dia não, o colega cobre
+ * o dia dela 3 dias depois (cobre dia 16, o colega cobre o 19).
+ */
+const val DIAS_ATE_COMPENSACAO = 3L
 
 object Escala {
 

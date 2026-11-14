@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wenes.escala.data.Config
 import com.wenes.escala.data.CorDestaque
+import com.wenes.escala.data.DIAS_ATE_COMPENSACAO
 import androidx.compose.ui.text.font.FontWeight
 import com.wenes.escala.data.Escala
 import com.wenes.escala.data.Feriados
@@ -95,8 +96,23 @@ fun Raiz(repo: Repositorio, pedirNotificacao: () -> Unit, pedirAgenda: () -> Uni
                 scope.launch {
                     repo.editar { atual ->
                         val trocas = atual.trocas.toMutableMap()
+                        val anterior = trocas[dia]
                         val igualAoPadrao = troca != null && (troca == Troca.TRABALHA) == Escala.padrao(atual, dia)
                         if (troca == null || igualAoPadrao) trocas.remove(dia) else trocas[dia] = troca
+
+                        // Cobrir um dia de folga (a pedido do colega) marca sozinho a folga de compensação 3 dias depois;
+                        // desfazer a troca desfaz a compensação.
+                        if (atual.compensarTroca) {
+                            val compensacao = dia.plusDays(DIAS_ATE_COMPENSACAO)
+                            val diaDeFolga = !Escala.padrao(atual, dia)
+                            val cobre = trocas[dia] == Troca.TRABALHA && diaDeFolga
+                            val cobria = anterior == Troca.TRABALHA && diaDeFolga
+                            if (cobre && Escala.trabalha(atual.copy(trocas = trocas), compensacao)) {
+                                trocas[compensacao] = Troca.FOLGA
+                            } else if (cobria && !cobre && trocas[compensacao] == Troca.FOLGA) {
+                                trocas.remove(compensacao)
+                            }
+                        }
                         atual.copy(trocas = trocas)
                     }
                 }
