@@ -16,7 +16,12 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
+import androidx.glance.LocalSize
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
+import androidx.glance.layout.width
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
@@ -31,6 +36,9 @@ import java.time.LocalDate
 
 class EscalaWidget : GlanceAppWidget() {
 
+    // O tamanho real que o aparelho deu ao widget: o conteúdo se adapta a ele (cada launcher redimensiona de um jeito).
+    override val sizeMode: SizeMode = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val config = (context.applicationContext as EscalaApp).repositorio.atual()
         provideContent { GlanceTheme { Conteudo(config) } }
@@ -43,23 +51,43 @@ private fun Conteudo(c: Config) {
     val trabalha = c.configurado && Escala.trabalha(c, hoje)
     val fundo = if (trabalha) GlanceTheme.colors.primaryContainer else GlanceTheme.colors.widgetBackground
     val texto = if (trabalha) GlanceTheme.colors.onPrimaryContainer else GlanceTheme.colors.onSurface
+    val titulo = if (trabalha) "Trabalho" else "Folga"
+    val detalhe = when {
+        !c.configurado -> "Abra o app"
+        trabalha -> Formato.horario(c)
+        else -> Escala.proximoTrabalho(c, hoje.plusDays(1))?.let { "Próximo: ${Formato.dia(it)}" } ?: ""
+    }
+    val altura = LocalSize.current.height
+    val moldura = GlanceModifier.fillMaxSize().appWidgetBackground().background(fundo).cornerRadius(24.dp)
+        .clickable(actionStartActivity<MainActivity>())
 
-    Column(
-        GlanceModifier.fillMaxSize().appWidgetBackground().background(fundo).cornerRadius(24.dp)
-            .padding(16.dp).clickable(actionStartActivity<MainActivity>()),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Hoje · ${Formato.dia(hoje)}", style = TextStyle(color = texto, fontSize = 12.sp))
-        Text(
-            if (trabalha) "Trabalho" else "Folga",
-            style = TextStyle(color = texto, fontSize = 28.sp, fontWeight = FontWeight.Bold),
-        )
-        val detalhe = when {
-            !c.configurado -> "Abra o app"
-            trabalha -> Formato.horario(c)
-            else -> Escala.proximoTrabalho(c, hoje.plusDays(1))?.let { "Próximo: ${Formato.dia(it)}" } ?: ""
+    when {
+        // Baixo: uma linha só, com o título e a data, para nada ficar cortado.
+        altura < 70.dp -> Row(
+            moldura.padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(titulo, style = TextStyle(color = texto, fontSize = 20.sp, fontWeight = FontWeight.Bold))
+            Spacer(GlanceModifier.width(8.dp))
+            Text(Formato.dia(hoje), style = TextStyle(color = texto, fontSize = 12.sp))
         }
-        if (detalhe.isNotEmpty()) Text(detalhe, style = TextStyle(color = texto, fontSize = 14.sp))
+        // Médio: data e título.
+        altura < 110.dp -> Column(
+            moldura.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Hoje · ${Formato.dia(hoje)}", style = TextStyle(color = texto, fontSize = 12.sp))
+            Text(titulo, style = TextStyle(color = texto, fontSize = 24.sp, fontWeight = FontWeight.Bold))
+        }
+        // Alto: data, título e o detalhe.
+        else -> Column(
+            moldura.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Hoje · ${Formato.dia(hoje)}", style = TextStyle(color = texto, fontSize = 12.sp))
+            Text(titulo, style = TextStyle(color = texto, fontSize = 28.sp, fontWeight = FontWeight.Bold))
+            if (detalhe.isNotEmpty()) Text(detalhe, style = TextStyle(color = texto, fontSize = 14.sp))
+        }
     }
 }
 
