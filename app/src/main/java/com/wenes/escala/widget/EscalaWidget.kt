@@ -21,6 +21,7 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
@@ -88,14 +89,26 @@ private fun Conteudo(c: Config) {
                 }
             }
         }
-        // Alto: data, título e o detalhe.
-        else -> Column(
-            moldura.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Hoje · ${Formato.dia(hoje)}", style = TextStyle(color = texto, fontSize = 12.sp))
-            Text(titulo, style = TextStyle(color = texto, fontSize = 28.sp, fontWeight = FontWeight.Bold))
-            if (detalhe.isNotEmpty()) Text(detalhe, style = TextStyle(color = texto, fontSize = 14.sp))
+        // Alto: data, título e o detalhe. A letra e o espaço entre as linhas crescem com o tamanho do widget,
+        // para não sobrar vazio em cima e embaixo (limitada pela largura, para nada passar da borda).
+        else -> {
+            val largura = LocalSize.current.width.value
+            val titulo_sp = minOf(altura.value * 0.26f, (largura - 32f) / 4.6f).coerceIn(28f, 52f)
+            val data_sp = (titulo_sp * 0.42f).coerceIn(12f, 20f)
+            val detalhe_sp = minOf(titulo_sp * 0.5f, (largura - 32f) / 9.5f).coerceIn(12f, 22f)
+            val respiro = (titulo_sp * 0.22f).dp
+            Column(
+                moldura.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Hoje · ${Formato.dia(hoje)}", style = TextStyle(color = texto, fontSize = data_sp.sp))
+                Spacer(GlanceModifier.height(respiro))
+                Text(titulo, style = TextStyle(color = texto, fontSize = titulo_sp.sp, fontWeight = FontWeight.Bold))
+                if (detalhe.isNotEmpty()) {
+                    Spacer(GlanceModifier.height(respiro))
+                    Text(detalhe, style = TextStyle(color = texto, fontSize = detalhe_sp.sp), maxLines = 2)
+                }
+            }
         }
     }
 }
