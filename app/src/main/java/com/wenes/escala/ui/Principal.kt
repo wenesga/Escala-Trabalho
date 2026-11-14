@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,8 +65,23 @@ import java.time.YearMonth
 private val VermelhoFeriado = Color(0xFFE25B5B)
 private val AmareloFeriado = Color(0xFFFFB84D)
 
-/** Dia extra (cobriu um colega): turquesa, o verde puxado para o azul. Se o tema já é turquesa, vira azul. */
-private fun corDoExtra(cor: CorDestaque) = if (cor == CorDestaque.TURQUESA) Color(0xFF3D7FEF) else Color(0xFF20A398)
+/**
+ * Dia extra (cobriu um colega): cada cor de destaque tem a sua cor de extra, uma vizinha dela no círculo de cores,
+ * para não parecer um dia de trabalho comum. No verde, por exemplo, é o turquesa (o verde puxado para o azul).
+ */
+private fun corDoExtra(cor: CorDestaque) = when (cor) {
+    CorDestaque.VERDE -> Color(0xFF20A398)
+    CorDestaque.AZUL -> Color(0xFF6B5CE7)
+    CorDestaque.ROXO -> Color(0xFFD05BC8)
+    CorDestaque.TURQUESA -> Color(0xFF3D7FEF)
+    CorDestaque.LARANJA -> Color(0xFFE0B03A)
+    CorDestaque.VERMELHO -> Color(0xFFC94F8E)
+    CorDestaque.CINZA -> Color(0xFF7F9BB8)
+}
+
+/** Número legível sobre a cor do extra: escuro nas cores claras, branco nas escuras. */
+private fun textoSobre(fundo: Color) =
+    if (fundo.luminance() > 0.45f) Color(0xFF1B1C1E) else Color.White
 
 /** No tema vermelho o feriado vira amarelo, para não ficar igual aos dias de trabalho. */
 private fun corDoFeriado(cor: CorDestaque) = if (cor == CorDestaque.VERMELHO) AmareloFeriado else VermelhoFeriado
@@ -306,7 +322,7 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
             "${dia.dayOfMonth}",
             style = MaterialTheme.typography.bodyLarge,
             color = when {
-                extra -> Color.White
+                extra -> textoSobre(corDoExtra(c.cor))
                 trabalha -> cores.onPrimary
                 else -> cores.onSurface
             },
