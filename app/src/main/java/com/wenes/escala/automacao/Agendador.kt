@@ -35,7 +35,7 @@ object Agendador {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S || gerenciador(contexto).canScheduleExactAlarms()
 
     /** Refaz o alarme, a virada do dia e o widget. Chamar após qualquer mudança da escala. */
-    suspend fun reagendar(contexto: Context, config: Config? = null) {
+    suspend fun reagendar(contexto: Context, config: Config? = null, anterior: Config? = null) {
         val c = config ?: (contexto.applicationContext as EscalaApp).repositorio.atual()
         val quando = proximoAlarme(c)
         if (quando == null) {
@@ -51,7 +51,7 @@ object Agendador {
         }
         agendarMeiaNoite(contexto)
         runCatching { EscalaWidget().updateAll(contexto) }
-        AgendaGoogle.sincronizar(contexto, c)
+        AgendaGoogle.sincronizar(contexto, c, anterior)
     }
 
     /** O primeiro dia de trabalho, de hoje em diante, cujo horário do alarme ainda não passou. */

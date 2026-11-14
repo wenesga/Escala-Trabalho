@@ -62,7 +62,8 @@ class Repositorio(private val contexto: Context) {
     suspend fun atual(): Config = config.first()
 
     suspend fun editar(mudar: (Config) -> Config) {
-        val nova = mudar(atual()).copy(configurado = true)
+        val antes = atual()
+        val nova = mudar(antes).copy(configurado = true)
         contexto.loja.edit { p ->
             p[K.inicio] = nova.inicio.toEpochDay()
             p[K.trabalho] = nova.diasTrabalho
@@ -80,7 +81,7 @@ class Repositorio(private val contexto: Context) {
             p[K.alarme] = horaParaMinutos(nova.alarme)
             p[K.trocas] = nova.trocas.entries.joinToString(";") { "${it.key.toEpochDay()}:${it.value.name}" }
         }
-        Agendador.reagendar(contexto, nova)
+        Agendador.reagendar(contexto, nova, antes)
     }
 
     private fun horaParaMinutos(t: LocalTime) = t.hour * 60 + t.minute

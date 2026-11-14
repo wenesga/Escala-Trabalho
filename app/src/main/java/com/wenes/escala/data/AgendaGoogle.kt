@@ -36,17 +36,28 @@ object AgendaGoogle {
             ContextCompat.checkSelfPermission(contexto, it) == PackageManager.PERMISSION_GRANTED
         }
 
-    /** Deixa a agenda igual à escala: cria os dias que faltam e apaga os que não são mais de trabalho. */
-    suspend fun sincronizar(contexto: Context, c: Config) = withContext(Dispatchers.IO) {
+    /**
+     * Deixa a agenda igual à escala: cria os dias que faltam e apaga os que não são mais de trabalho.
+     * [anterior] é a configuração de antes da mudança: título, descrição e local só são trocados nos eventos
+     * que ainda estão como o app escreveu, para nunca apagar o que a pessoa editou à mão (como um ✅ no título).
+     */
+    suspend fun sincronizar(contexto: Context, c: Config, anterior: Config? = null) = withContext(Dispatchers.IO) {
         if (!temPermissao(contexto)) {
             Log.i(TAG, "Sem permissão da agenda")
             return@withContext
         }
-        runCatching { executar(contexto.contentResolver, c) }
+        runCatching { executar(contexto.contentResolver, c, anterior) }
             .onFailure { Log.e(TAG, "Falha ao sincronizar a agenda", it) }
     }
 
-    private fun executar(cr: ContentResolver, c: Config) {
+    private fun tituloDe(c: Config) = c.titulo.trim().ifEmpty { TITULO }
+
+    /** A descrição leva o horário e termina com a marca do app (é por ela que os eventos são reconhecidos). */
+    private fun descricaoDe(c: Config) =
+        listOf(c.detalhe.trim(), "Das ${Formato.hora(c.entrada)} às ${Formato.hora(c.saida)}")
+            .filter { it.isNotEmpty() }.joinToString("\n") + "\n\n$MARCA"
+
+    private fun executar(cr: ContentResolver, c: Config, anterior: Config?) {
         val calendario = calendarioPrincipal(cr) ?: return
         val hoje = LocalDate.now()
         val ativo = c.agenda && c.configurado
@@ -54,11 +65,12 @@ object AgendaGoogle {
         val inicioJanela = if (ativo) minOf(c.inicio, hoje).coerceAtLeast(hoje.minusDays(MAX_DIAS_ATRAS)) else hoje
         val inicioMs = inicioJanela.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
-        // A descrição leva o horário e termina com a marca do app (é por ela que os eventos são reconhecidos).
-        val descricao = listOf(c.detalhe.trim(), "Das ${Formato.hora(c.entrada)} às ${Formato.hora(c.saida)}")
-            .filter { it.isNotEmpty() }.joinToString("\n") + "\n\n$MARCA"
+        val descricao = descricaoDe(c)
         val local = c.local.trim()
-        val titulo = c.titulo.trim().ifEmpty { TITULO }
+        val titulo = tituloDe(c)
+        val tituloAntes = anterior?.let(::tituloDe)
+        val descricaoAntes = anterior?.let(::descricaoDe)
+        val localAntes = anterior?.local?.trim()
 
         val existentes = HashMap<LocalDate, MutableList<Existente>>()
         val feriasExistentes = mutableListOf<Pair<Long, Periodo>>()
@@ -118,12 +130,18 @@ object AgendaGoogle {
                 val passado = dia < hoje
                 if (i > 0 || (!passado && dia !in desejados)) {
                     operacoes += ContentProviderOperation.newDelete(uri).build()
-                } else if (!passado && (tituloAtual != titulo || descricaoAtual != descricao || (localAtual ?: "") != local)) {
-                    // O título, o horário, o texto ou o local mudou: atualiza o evento que já existe.
-                    operacoes += ContentProviderOperation.newUpdate(uri)
-                        .withValue(CalendarContract.Events.TITLE, titulo)
-                        .withValue(CalendarContract.Events.DESCRIPTION, descricao)
-                        .withValue(CalendarContract.Events.EVENT_LOCATION, local).build()
+                } else if (!passado && anterior != null) {
+                    // Só troca o que ainda está como o app escreveu antes: o que a pessoa editou à mão fica.
+                    val mudaTitulo = tituloAtual == tituloAntes && tituloAtual != titulo
+                    val mudaDescricao = descricaoAtual == descricaoAntes && descricaoAtual != descricao
+                    val mudaLocal = (localAtual ?: "") == localAntes && (localAtual ?: "") != local
+                    if (mudaTitulo || mudaDescricao || mudaLocal) {
+                        val troca = ContentProviderOperation.newUpdate(uri)
+                        if (mudaTitulo) troca.withValue(CalendarContract.Events.TITLE, titulo)
+                        if (mudaDescricao) troca.withValue(CalendarContract.Events.DESCRIPTION, descricao)
+                        if (mudaLocal) troca.withValue(CalendarContract.Events.EVENT_LOCATION, local)
+                        operacoes += troca.build()
+                    }
                 }
             }
         }
