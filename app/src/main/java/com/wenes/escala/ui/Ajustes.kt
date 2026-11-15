@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -31,8 +32,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,7 +45,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -65,7 +63,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Spacer
+import java.time.Month
+import java.time.YearMonth
+import java.util.Locale
+import java.time.format.TextStyle as JavaTextStyle
 import com.wenes.escala.data.Config
 import com.wenes.escala.data.CorDestaque
 import com.wenes.escala.data.Formato
@@ -210,7 +214,7 @@ private fun PaginaEscala(c: Config, aoMudar: ((Config) -> Config) -> Unit) {
     Contador("Dias trabalhando", c.diasTrabalho) { v -> aoMudar { it.copy(diasTrabalho = v) } }
     Contador("Dias de folga", c.diasFolga) { v -> aoMudar { it.copy(diasFolga = v) } }
     Interruptor("Compensar troca", c.compensarTroca) { v -> aoMudar { it.copy(compensarTroca = v) } }
-    if (data) DialogoData(c.inicio, { d -> aoMudar { it.copy(inicio = d) }; data = false }, { data = false })
+    if (data) DialogoData(c.inicio, null, { d -> aoMudar { it.copy(inicio = d) }; data = false }, { data = false })
 }
 
 @Composable
@@ -344,7 +348,7 @@ fun TelaPrimeiraVez(c: Config, aoComecar: (Config) -> Unit) {
         ) { Text("Começar") }
     }
     when (campo) {
-        "inicio" -> DialogoData(inicio, { inicio = it; campo = null }, { campo = null })
+        "inicio" -> DialogoData(inicio, null, { inicio = it; campo = null }, { campo = null })
         "entrada" -> DialogoHora(entrada, { entrada = it; campo = null }, { campo = null })
         "saida" -> DialogoHora(saida, { saida = it; campo = null }, { campo = null })
     }
@@ -429,21 +433,100 @@ private fun CampoTexto(rotulo: String, valor: String, umaLinha: Boolean, aoConfi
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Calendário próprio: no topo, o mês e o ano (toque para abrir a lista de meses) e as setas para avançar e voltar.
 @Composable
-private fun DialogoData(inicial: LocalDate, aoOk: (LocalDate) -> Unit, aoFechar: () -> Unit) {
-    val estado = rememberDatePickerState(
-        initialSelectedDateMillis = inicial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-    )
-    DatePickerDialog(
+private fun DialogoData(
+    inicial: LocalDate,
+    minimo: LocalDate?,
+    aoOk: (LocalDate) -> Unit,
+    aoFechar: () -> Unit,
+) {
+    var mes by remember { mutableStateOf(YearMonth.from(inicial)) }
+    var escolhida by remember { mutableStateOf(inicial) }
+    var listaMeses by remember { mutableStateOf(false) }
+    val br = Locale("pt", "BR")
+    fun nomeMes(m: Month, estilo: JavaTextStyle) = m.getDisplayName(estilo, br).replaceFirstChar { it.uppercase() }
+
+    AlertDialog(
         onDismissRequest = aoFechar,
-        confirmButton = {
-            TextButton(onClick = {
-                estado.selectedDateMillis?.let { aoOk(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
-            }) { Text("OK") }
-        },
+        confirmButton = { TextButton(onClick = { aoOk(escolhida) }) { Text("OK") } },
         dismissButton = { TextButton(onClick = aoFechar) { Text("Cancelar") } },
-    ) { DatePicker(estado) }
+        text = {
+            Column {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { mes = if (listaMeses) mes.minusYears(1) else mes.minusMonths(1) }) { Text("‹") }
+                    TextButton(onClick = { listaMeses = !listaMeses }, modifier = Modifier.weight(1f)) {
+                        Text(
+                            if (listaMeses) "${mes.year}" else "${nomeMes(mes.month, JavaTextStyle.FULL)} ${mes.year}",
+                            style = MaterialTheme.typography.titleMedium, maxLines = 1,
+                        )
+                    }
+                    TextButton(onClick = { mes = if (listaMeses) mes.plusYears(1) else mes.plusMonths(1) }) { Text("›") }
+                }
+                if (listaMeses) {
+                    for (linha in 0 until 4) {
+                        Row(Modifier.fillMaxWidth()) {
+                            for (col in 0 until 3) {
+                                val m = Month.of(linha * 3 + col + 1)
+                                val atual = m == mes.month
+                                Box(
+                                    Modifier.weight(1f).height(48.dp).padding(2.dp).clip(CircleShape)
+                                        .background(if (atual) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                        .clickable { mes = mes.withMonth(m.value); listaMeses = false },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        nomeMes(m, JavaTextStyle.SHORT),
+                                        color = if (atual) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Row(Modifier.fillMaxWidth()) {
+                        for (d in listOf("D", "S", "T", "Q", "Q", "S", "S")) {
+                            Text(
+                                d, Modifier.weight(1f), textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    val vazios = mes.atDay(1).dayOfWeek.value % 7 // domingo = 0
+                    val celulas = vazios + mes.lengthOfMonth()
+                    for (linha in 0 until (celulas + 6) / 7) {
+                        Row(Modifier.fillMaxWidth()) {
+                            for (col in 0 until 7) {
+                                val dia = linha * 7 + col - vazios + 1
+                                if (dia < 1 || dia > mes.lengthOfMonth()) {
+                                    Spacer(Modifier.weight(1f).height(44.dp))
+                                } else {
+                                    val data = mes.atDay(dia)
+                                    val liberado = minimo == null || data >= minimo
+                                    val marcado = data == escolhida
+                                    Box(
+                                        Modifier.weight(1f).height(44.dp).padding(2.dp).clip(CircleShape)
+                                            .background(if (marcado) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                            .clickable(enabled = liberado) { escolhida = data },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            "$dia",
+                                            color = when {
+                                                marcado -> MaterialTheme.colorScheme.onPrimary
+                                                liberado -> MaterialTheme.colorScheme.onSurface
+                                                else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
 }
 
 @Composable
@@ -469,8 +552,9 @@ private fun DialogoFerias(aoOk: (Periodo) -> Unit, aoFechar: () -> Unit) {
     )
 
     when (escolhendo) {
-        0 -> DialogoData(inicio, { inicio = it; if (fim < it) fim = it; escolhendo = null }, { escolhendo = null })
-        1 -> DialogoData(fim, { fim = it; escolhendo = null }, { escolhendo = null })
+        // O fim acompanha o início (abre no mesmo mês) e não pode ser antes dele.
+        0 -> DialogoData(inicio, null, { inicio = it; fim = it; escolhendo = null }, { escolhendo = null })
+        1 -> DialogoData(fim, inicio, { fim = it; escolhendo = null }, { escolhendo = null })
         else -> Unit
     }
 }

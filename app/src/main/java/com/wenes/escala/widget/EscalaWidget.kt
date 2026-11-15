@@ -65,6 +65,16 @@ private fun Conteudo(c: Config) {
     when {
         // Baixo: uma linha só, com o título e, na frente dele, o detalhe (próximo dia de trabalho ou horário),
         // que no tamanho largo cabe ao lado e não precisa ir para baixo.
+        // Baixo e estreito (1 linha x 2 colunas): título menor e o detalhe embaixo, para o "Trabalho" não ser cortado.
+        altura < 70.dp && LocalSize.current.width < 200.dp -> Column(
+            moldura.padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(titulo, style = TextStyle(color = texto, fontSize = 16.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+            if (detalhe.isNotEmpty()) {
+                Text(detalhe, style = TextStyle(color = texto, fontSize = 11.sp), maxLines = 1)
+            }
+        }
         altura < 70.dp -> Row(
             moldura.padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -82,7 +92,8 @@ private fun Conteudo(c: Config) {
         ) {
             Text("Hoje · ${Formato.dia(hoje)}", style = TextStyle(color = texto, fontSize = 12.sp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(titulo, style = TextStyle(color = texto, fontSize = 24.sp, fontWeight = FontWeight.Bold))
+                val medio_sp = minOf(24f, (LocalSize.current.width.value - 32f) / 7f).coerceAtLeast(14f)
+                Text(titulo, style = TextStyle(color = texto, fontSize = medio_sp.sp, fontWeight = FontWeight.Bold), maxLines = 1)
                 if (detalhe.isNotEmpty()) {
                     Spacer(GlanceModifier.width(16.dp))
                     Text(detalhe, style = TextStyle(color = texto, fontSize = 14.sp), maxLines = 1)
@@ -93,7 +104,7 @@ private fun Conteudo(c: Config) {
         // para não sobrar vazio em cima e embaixo (limitada pela largura, para nada passar da borda).
         else -> {
             val largura = LocalSize.current.width.value
-            val titulo_sp = minOf(altura.value * 0.17f, (largura - 32f) / 4.6f).coerceIn(28f, 36f)
+            val titulo_sp = minOf(altura.value * 0.17f, (largura - 32f) / 5.4f).coerceIn(16f, 36f)
             val data_sp = (titulo_sp * 0.40f).coerceIn(12f, 15f)
             // O detalhe ("Próximo: Dom, 15/11") encolhe até caber inteiro numa linha, mesmo no quadrado.
             val detalhe_sp = minOf(titulo_sp * 0.46f, (largura - 32f) / 13.8f).coerceIn(9f, 17f)

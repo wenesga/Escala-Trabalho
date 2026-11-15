@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wenes.escala.data.Config
 import com.wenes.escala.data.CorDestaque
@@ -200,7 +201,7 @@ private fun CartaoHoje(c: Config) {
             Text("Hoje · ${Formato.dia(hoje)}", style = MaterialTheme.typography.labelLarge)
             Text(
                 if (trabalha) "Trabalho" else "Folga",
-                style = MaterialTheme.typography.displaySmall,
+                style = MaterialTheme.typography.displaySmall.copy(fontSize = 32.sp, lineHeight = 38.sp),
                 color = if (trabalha) cores.primary else cores.onSurface,
             )
             if (trabalha) {
@@ -211,7 +212,7 @@ private fun CartaoHoje(c: Config) {
                 }
             }
             // Só aparece quando hoje é feriado.
-            Feriados.nome(hoje)?.let { Text("Feriado: $it", style = MaterialTheme.typography.bodyMedium) }
+            Feriados.nome(hoje)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
         }
     }
 }
