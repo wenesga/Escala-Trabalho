@@ -118,31 +118,17 @@ fun Raiz(repo: Repositorio, pedirNotificacao: () -> Unit, pedirAgenda: () -> Uni
                 scope.launch {
                     repo.editar { atual ->
                         val trocas = atual.trocas.toMutableMap()
-                        val anterior = trocas[dia]
-                        val igualAoPadrao = troca != null && (troca == Troca.TRABALHA) == Escala.padrao(atual, dia)
-                        if (troca == null || igualAoPadrao) trocas.remove(dia) else trocas[dia] = troca
-
-                        // Cobrir um dia de folga (a pedido do colega) marca sozinho a folga de compensação 3 dias depois.
-                        // A troca é uma só: desfazer qualquer um dos dois lados desfaz o outro, mas só enquanto
-                        // ainda não passou (o que já passou é registro e não se desfaz).
-                        if (atual.compensarTroca) {
-                            val hoje = LocalDate.now()
-                            val compensacao = dia.plusDays(DIAS_ATE_COMPENSACAO)
-                            val origem = dia.minusDays(DIAS_ATE_COMPENSACAO)
-                            val diaDeFolga = !Escala.padrao(atual, dia)
-                            val cobre = trocas[dia] == Troca.TRABALHA && diaDeFolga
-                            val cobria = anterior == Troca.TRABALHA && diaDeFolga
-                            if (cobre && Escala.trabalha(atual.copy(trocas = trocas), compensacao)) {
-                                trocas[compensacao] = Troca.FOLGA
-                            } else if (cobria && !cobre && dia >= hoje && trocas[compensacao] == Troca.FOLGA) {
-                                // Desfez o extra: a compensação vai junto.
-                                trocas.remove(compensacao)
-                            }
-                            // Desfez a compensação (voltou o dia para o padrão): o extra que a originou vai junto.
-                            val desfezCompensacao = anterior == Troca.FOLGA && trocas[dia] != Troca.FOLGA &&
-                                Escala.padrao(atual, dia)
-                            val origemEhExtra = trocas[origem] == Troca.TRABALHA && !Escala.padrao(atual, origem)
-                            if (desfezCompensacao && origemEhExtra && origem >= hoje) trocas.remove(origem)
+                        // Só os extras ficam gravados; as folgas de compensação são calculadas a partir deles.
+                        // Por isso marcar e desmarcar é sempre reversível e uma marcação nunca apaga outra.
+                        val extraDaFolga = Escala.compensacoes(atual)[dia]
+                        when {
+                            // "Padrão" numa folga de compensação desfaz a troca inteira: o extra dela vai junto.
+                            extraDaFolga != null && troca == null -> trocas.remove(extraDaFolga)
+                            // "Trabalho" nela só liga o dia: o extra fica e a folga passa para o próximo dia livre.
+                            extraDaFolga != null && troca == Troca.TRABALHA -> trocas[dia] = Troca.TRABALHA
+                            extraDaFolga != null -> Unit
+                            troca == null || (troca == Troca.TRABALHA) == Escala.padrao(atual, dia) -> trocas.remove(dia)
+                            else -> trocas[dia] = troca
                         }
                         atual.copy(trocas = trocas)
                     }
@@ -307,7 +293,8 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
     // Cinza só nos dias em que a pessoa trabalharia se não estivesse de férias.
     val ferias = Escala.emFerias(c, dia) && !trabalha && Escala.noCiclo(c, dia)
     // Extra: dia de folga em que a pessoa cobriu um colega. Fica no tom escuro da cor de destaque.
-    val extra = trocado && trabalha
+    val extra = trocado && trabalha && !Escala.padrao(c, dia)
+    val compensacao = Escala.compensacoes(c).containsKey(dia)
     Box(
         modifier.aspectRatio(1f).padding(3.dp).clip(CircleShape)
             .background(
@@ -337,7 +324,7 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
             )
         }
         // Folga que veio de uma troca (a compensação): um pontinho. O extra já se vê pela cor.
-        if (trocado && !trabalha) {
+        if ((trocado || compensacao) && !trabalha) {
             Box(
                 // Embaixo do número; se o dia também é feriado, um pouco acima do tracinho.
                 Modifier.align(Alignment.BottomCenter).padding(bottom = if (feriado) 12.dp else 6.dp).size(6.dp)
@@ -400,7 +387,7 @@ private fun ListaFeriados(mes: YearMonth) {
 @Composable
 private fun DialogoDia(c: Config, dia: LocalDate, aoTrocar: (LocalDate, Troca?) -> Unit, aoFechar: () -> Unit) {
     val trabalha = Escala.trabalha(c, dia)
-    val trocado = c.trocas.containsKey(dia)
+    val trocado = c.trocas.containsKey(dia) || Escala.compensacoes(c).containsKey(dia)
     AlertDialog(
         onDismissRequest = aoFechar,
         title = { Text(Formato.dia(dia)) },

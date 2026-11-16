@@ -68,7 +68,38 @@ object Escala {
     fun trabalha(c: Config, dia: LocalDate): Boolean = when (c.trocas[dia]) {
         Troca.TRABALHA -> true
         Troca.FOLGA -> false
-        null -> padrao(c, dia)
+        null -> padrao(c, dia) && !compensacoes(c).containsKey(dia)
+    }
+
+    private class Guardado(
+        val trocas: Map<LocalDate, Troca>, val inicio: LocalDate, val trabalho: Int, val folga: Int,
+        val ferias: List<Periodo>, val resultado: Map<LocalDate, LocalDate>,
+    )
+
+    @Volatile
+    private var guardado: Guardado? = null
+
+    /**
+     * Folgas de compensação, calculadas na hora a partir dos extras (nada disso fica gravado): cada extra
+     * gera uma folga 3 dias depois ou, se esse dia já foi marcado, no próximo dia de trabalho livre.
+     * Devolve dia de folga -> dia extra que a gerou. Marcar ou desmarcar um extra só refaz a conta.
+     */
+    fun compensacoes(c: Config): Map<LocalDate, LocalDate> {
+        if (!c.compensarTroca) return emptyMap()
+        guardado?.let {
+            if (it.trocas === c.trocas && it.inicio == c.inicio && it.trabalho == c.diasTrabalho &&
+                it.folga == c.diasFolga && it.ferias == c.ferias
+            ) return it.resultado
+        }
+        val extras = c.trocas.filter { (d, t) -> t == Troca.TRABALHA && !padrao(c, d) }.keys.sorted()
+        val folgas = mutableMapOf<LocalDate, LocalDate>()
+        for (extra in extras) {
+            val dia = generateSequence(extra.plusDays(DIAS_ATE_COMPENSACAO)) { it.plusDays(1) }.take(800)
+                .firstOrNull { padrao(c, it) && !c.trocas.containsKey(it) && !folgas.containsKey(it) } ?: continue
+            folgas[dia] = extra
+        }
+        guardado = Guardado(c.trocas, c.inicio, c.diasTrabalho, c.diasFolga, c.ferias, folgas)
+        return folgas
     }
 
     fun proximoTrabalho(c: Config, desde: LocalDate): LocalDate? =
