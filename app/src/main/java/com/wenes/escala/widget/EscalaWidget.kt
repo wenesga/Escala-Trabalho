@@ -2,6 +2,8 @@ package com.wenes.escala.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -44,8 +46,13 @@ class EscalaWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val config = (context.applicationContext as EscalaApp).repositorio.atual()
-        provideContent { GlanceTheme { Conteudo(config) } }
+        val repositorio = (context.applicationContext as EscalaApp).repositorio
+        val inicial = repositorio.atual()
+        // A configuração é acompanhada ao vivo: se o widget já estiver aberto, a próxima mudança também chega nele.
+        provideContent {
+            val config by repositorio.config.collectAsState(initial = inicial)
+            GlanceTheme { Conteudo(config) }
+        }
     }
 }
 
