@@ -174,12 +174,8 @@ private fun CartaoHoje(c: Config) {
         Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            // Destaque fraco: só um tom da cor sobre o fundo. O forte (cheio) fica nos dias do calendário.
-            containerColor = if (trabalha) {
-                androidx.compose.ui.graphics.lerp(cores.surfaceContainerHigh, cores.primary, 0.22f)
-            } else {
-                cores.surfaceContainerHigh
-            },
+            // Fundo neutro nos dois casos, igual ao widget; quem avisa é a cor do título.
+            containerColor = cores.surfaceContainerHigh,
             contentColor = cores.onSurface,
         ),
     ) {
@@ -188,7 +184,8 @@ private fun CartaoHoje(c: Config) {
             Text(
                 if (trabalha) "Trabalho" else "Folga",
                 style = MaterialTheme.typography.displaySmall.copy(fontSize = 32.sp, lineHeight = 38.sp),
-                color = if (trabalha) cores.primary else cores.onSurface,
+                // Trabalho em vermelho (atenção) e folga em verde (livre), as mesmas cores do widget.
+                color = if (trabalha) Color(0xFFEF5350) else Color(0xFF66BB6A),
             )
             if (trabalha) {
                 Text(Formato.horario(c), style = MaterialTheme.typography.titleMedium)
