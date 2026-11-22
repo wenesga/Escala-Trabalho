@@ -41,7 +41,6 @@ import com.wenes.escala.automacao.Notificacoes
 import com.wenes.escala.automacao.SomAlarmeService
 import com.wenes.escala.data.Config
 import com.wenes.escala.data.Escala
-import com.wenes.escala.data.CorDestaque
 import com.wenes.escala.data.Formato
 import com.wenes.escala.ui.EscalaTheme
 import kotlinx.coroutines.delay
@@ -68,7 +67,9 @@ class AlarmeActivity : ComponentActivity() {
 
         setContent {
             val config by produceState<Config?>(null) { value = app.repositorio.atual() }
-            EscalaTheme(config?.cor ?: CorDestaque.AZUL) {
+            EscalaTheme(
+                config?.cor ?: Config().cor, config?.tema ?: Config().tema, config?.fundo ?: Config().fundo,
+            ) {
                 TelaAlarme(
                     config = config,
                     saida = tipo == Agendador.TIPO_SAIDA,

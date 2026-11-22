@@ -11,10 +11,23 @@ enum class Troca { TRABALHA, FOLGA }
 /** Período de férias, do primeiro ao último dia (os dois incluídos). */
 data class Periodo(val inicio: LocalDate, val fim: LocalDate)
 
-enum class CorDestaque { AZUL, ROXO, TURQUESA, LARANJA, VERMELHO, VERDE, CINZA }
+/** Ordem igual ao Organizador Pro: Automática (Android 12+) primeiro. */
+enum class CorDestaque { AUTOMATICA, AZUL, VERDE, ROXO, TURQUESA, LARANJA, ROSA }
+
+/** Tema do app: segue o sistema ou fica fixo. */
+enum class TemaApp { SISTEMA, CLARO, ESCURO }
+
+/** Fundos do tema escuro (cor em ARGB). */
+enum class FundoEscuro(val argb: Long, val nome: String) {
+    PRETO(0xFF000000, "Preto"), PETROLEO(0xFF22272B, "Petróleo"), MARINHO(0xFF171A26, "Marinho"),
+    VINHO(0xFF1A1113, "Vinho"), GRAFITE(0xFF121416, "Grafite"), VERDE(0xFF0B1512, "Verde"),
+    ROXO(0xFF14101D, "Roxo"),
+}
 
 data class Config(
-    val cor: CorDestaque = CorDestaque.AZUL,
+    val cor: CorDestaque = CorDestaque.TURQUESA,
+    val tema: TemaApp = TemaApp.SISTEMA,
+    val fundo: FundoEscuro = FundoEscuro.MARINHO,
     /** Marca os dias de trabalho no Google Agenda, como evento de dia inteiro. */
     val agenda: Boolean = false,
     /** Título dos eventos de trabalho no Google Agenda. */

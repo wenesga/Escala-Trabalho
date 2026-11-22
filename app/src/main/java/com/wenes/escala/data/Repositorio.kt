@@ -29,6 +29,8 @@ class Repositorio(private val contexto: Context) {
         val alarme = intPreferencesKey("alarme")
         val trocas = stringPreferencesKey("trocas")
         val cor = stringPreferencesKey("cor")
+        val tema = stringPreferencesKey("tema")
+        val fundo = stringPreferencesKey("fundo")
         val agenda = booleanPreferencesKey("agenda")
         val local = stringPreferencesKey("local")
         val detalhe = stringPreferencesKey("detalhe")
@@ -62,6 +64,8 @@ class Repositorio(private val contexto: Context) {
             minutosAntesSaida = p[K.minutosAntesSaida] ?: padrao.minutosAntesSaida,
             compensarTroca = p[K.compensarTroca] ?: padrao.compensarTroca,
             cor = p[K.cor]?.let { n -> CorDestaque.entries.firstOrNull { it.name == n } } ?: padrao.cor,
+            tema = p[K.tema]?.let { n -> TemaApp.entries.firstOrNull { it.name == n } } ?: padrao.tema,
+            fundo = p[K.fundo]?.let { n -> FundoEscuro.entries.firstOrNull { it.name == n } } ?: padrao.fundo,
         )
     }
 
@@ -77,6 +81,8 @@ class Repositorio(private val contexto: Context) {
             p[K.entrada] = horaParaMinutos(nova.entrada)
             p[K.saida] = horaParaMinutos(nova.saida)
             p[K.cor] = nova.cor.name
+            p[K.tema] = nova.tema.name
+            p[K.fundo] = nova.fundo.name
             p[K.agenda] = nova.agenda
             p[K.alarmeSaida] = nova.alarmeSaida
             p[K.titulo] = nova.titulo

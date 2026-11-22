@@ -76,16 +76,16 @@ private fun corDoExtra(cor: CorDestaque) = when (cor) {
     CorDestaque.ROXO -> Color(0xFFD05BC8)
     CorDestaque.TURQUESA -> Color(0xFF3D7FEF)
     CorDestaque.LARANJA -> Color(0xFFE0B03A)
-    CorDestaque.VERMELHO -> Color(0xFFC94F8E)
-    CorDestaque.CINZA -> Color(0xFF7F9BB8)
+    CorDestaque.ROSA -> Color(0xFF9B6BE0)
+    CorDestaque.AUTOMATICA -> Color(0xFF7F9BB8)
 }
 
 /** Número legível sobre a cor do extra: escuro nas cores claras, branco nas escuras. */
 private fun textoSobre(fundo: Color) =
     if (fundo.luminance() > 0.45f) Color(0xFF1B1C1E) else Color.White
 
-/** No tema vermelho o feriado vira amarelo, para não ficar igual aos dias de trabalho. */
-private fun corDoFeriado(cor: CorDestaque) = if (cor == CorDestaque.VERMELHO) AmareloFeriado else VermelhoFeriado
+/** No tema rosa o feriado vira amarelo, para não ficar parecido com os dias de trabalho. */
+private fun corDoFeriado(cor: CorDestaque) = if (cor == CorDestaque.ROSA) AmareloFeriado else VermelhoFeriado
 
 @Composable
 fun Raiz(repo: Repositorio, pedirNotificacao: () -> Unit, pedirAgenda: () -> Unit) {
@@ -230,11 +230,11 @@ private fun Calendario(c: Config, pager: PagerState, aoDia: (LocalDate) -> Unit)
         ) { pagina ->
             Card(
                 Modifier.fillMaxWidth().padding(4.dp),
-                shape = MaterialTheme.shapes.extraLarge,
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
-                Column(Modifier.padding(12.dp)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(Modifier.fillMaxWidth()) {
                         listOf("D", "S", "T", "Q", "Q", "S", "S").forEach {
                             Text(
@@ -262,9 +262,9 @@ private fun mesDaPagina(pagina: Int): YearMonth = YearMonth.now().plusMonths((pa
 private fun GradeDoMes(c: Config, mes: YearMonth, aoDia: (LocalDate) -> Unit) {
     val hoje = LocalDate.now()
     val vazios = mes.atDay(1).dayOfWeek.value % 7
-    Column(Modifier.fillMaxWidth()) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         repeat(6) { linha ->
-            Row(Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 repeat(7) { coluna ->
                     val numero = linha * 7 + coluna - vazios + 1
                     if (numero in 1..mes.lengthOfMonth()) {
@@ -292,16 +292,17 @@ private fun Dia(modifier: Modifier, dia: LocalDate, c: Config, hoje: Boolean, ao
     // Extra: dia de folga em que a pessoa cobriu um colega. Fica no tom escuro da cor de destaque.
     val extra = trocado && trabalha && !Escala.padrao(c, dia)
     val compensacao = Escala.compensacoes(c).containsKey(dia)
+    val forma = RoundedCornerShape(12.dp)
     Box(
-        modifier.aspectRatio(1f).padding(3.dp).clip(CircleShape)
+        modifier.aspectRatio(1f).clip(forma)
             .background(
                 when {
                     trabalha -> if (extra) corDoExtra(c.cor) else cores.primary
-                    ferias -> androidx.compose.ui.graphics.lerp(cores.surfaceContainerLow, cores.tertiary, 0.35f)
-                    else -> Color.Transparent
+                    ferias -> androidx.compose.ui.graphics.lerp(cores.surfaceContainerHigh, cores.tertiary, 0.35f)
+                    else -> cores.surfaceContainerHigh
                 },
             )
-            .then(if (hoje) Modifier.border(BorderStroke(2.dp, cores.onSurface), CircleShape) else Modifier)
+            .then(if (hoje) Modifier.border(BorderStroke(2.dp, cores.onSurface), forma) else Modifier)
             .clickable(onClick = aoClicar),
         contentAlignment = Alignment.Center,
     ) {
@@ -344,15 +345,15 @@ private fun Legenda(cor: CorDestaque) {
     val centro = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
-            item("Trabalho") { Box(Modifier.size(14.dp).clip(CircleShape).background(cores.primary)) }
-            item("Extra") { Box(Modifier.size(14.dp).clip(CircleShape).background(corDoExtra(cor))) }
+            item("Trabalho") { Box(Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(cores.primary)) }
+            item("Extra") { Box(Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(corDoExtra(cor))) }
             item("Troca") { Box(Modifier.size(7.dp).clip(CircleShape).background(corDoExtra(cor))) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = centro) {
             item("Férias") {
                 Box(
-                    Modifier.size(14.dp).clip(CircleShape).background(
-                        androidx.compose.ui.graphics.lerp(cores.surfaceContainerLow, cores.tertiary, 0.35f),
+                    Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(
+                        androidx.compose.ui.graphics.lerp(cores.surfaceContainerHigh, cores.tertiary, 0.35f),
                     ),
                 )
             }

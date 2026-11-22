@@ -1,19 +1,56 @@
 package com.wenes.escala.ui
 
+import android.content.Context
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.wenes.escala.data.CorDestaque
+import com.wenes.escala.data.FundoEscuro
+import com.wenes.escala.data.TemaApp
 
-// Mesmo visual do Ciclo Treino: base neutra no claro, azul-marinho no escuro, destaque à escolha.
-private val BaseClara = EsquemaClaro.copy(
+// Mesmo tema dos outros apps: fundo escuro e destaque escolhidos à parte.
+
+private val Branco = Color.White
+
+val FundoEscuro.cor: Color get() = Color(argb)
+
+/** Tom forte (botões e seleções com texto branco), igual no claro e no escuro, exceto o Azul. */
+private fun forte(c: CorDestaque, escuro: Boolean) = when (c) {
+    CorDestaque.AZUL -> if (escuro) Color(0xFF2F6FEB) else Color(0xFF3D7FEF)
+    CorDestaque.VERDE -> Color(0xFF0E9F6E)
+    CorDestaque.ROXO -> Color(0xFF8E6BD6)
+    CorDestaque.TURQUESA -> Color(0xFF1F8F85)
+    CorDestaque.LARANJA -> Color(0xFFD9803A)
+    CorDestaque.ROSA -> Color(0xFFD9638A)
+    CorDestaque.AUTOMATICA -> Color(0xFF3D7FEF)
+}
+
+/** Tom claro (texto, links e ícones no escuro). */
+private fun claroNoEscuro(c: CorDestaque) = when (c) {
+    CorDestaque.AZUL, CorDestaque.AUTOMATICA -> Color(0xFF60A5FA)
+    CorDestaque.VERDE -> Color(0xFF4ADE80)
+    CorDestaque.ROXO -> Color(0xFFB794F6)
+    CorDestaque.TURQUESA -> Color(0xFF4DB6AC)
+    CorDestaque.LARANJA -> Color(0xFFF4A261)
+    CorDestaque.ROSA -> Color(0xFFFB7185)
+}
+
+private fun clarear(base: Color, f: Float) = lerp(base, Color.White, f)
+
+private val BaseClara = lightColorScheme().copy(
     background = Color(0xFFF1F3F4), onBackground = Color(0xFF1B1C1E),
     surface = Color(0xFFF1F3F4), onSurface = Color(0xFF1B1C1E),
     surfaceVariant = Color(0xFFE1E3E6), onSurfaceVariant = Color(0xFF44474A),
@@ -22,136 +59,68 @@ private val BaseClara = EsquemaClaro.copy(
     surfaceContainerLowest = Color(0xFFFFFFFF), surfaceContainerLow = Color(0xFFF7F8F9),
     surfaceContainer = Color(0xFFECEDEF), surfaceContainerHigh = Color(0xFFE6E7EA),
     surfaceContainerHighest = Color(0xFFE0E2E4),
-    secondary = Color(0xFF5E6168), onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE3E5E8), onSecondaryContainer = Color(0xFF1B1C1E),
+    error = Color(0xFFC0463C), errorContainer = Color(0xFFFADAD6),
 )
 
-private val BaseEscura = EsquemaEscuro.copy(
-    background = Color(0xFF171A26), surface = Color(0xFF171A26), surfaceDim = Color(0xFF171A26),
-    surfaceContainerLowest = Color(0xFF12141D), surfaceContainerLow = Color(0xFF252A39),
-    surfaceContainer = Color(0xFF1F2330), surfaceContainerHigh = Color(0xFF2E3447),
-    surfaceContainerHighest = Color(0xFF3A4155), surfaceBright = Color(0xFF444C62),
-    surfaceVariant = Color(0xFF3A4155), outlineVariant = Color(0xFF3A4155),
-    secondary = Color(0xFFC4C6CA), onSecondary = Color(0xFF2D3033),
-    secondaryContainer = Color(0xFF3A4155), onSecondaryContainer = Color(0xFFF2F4F8),
+private fun baseEscura(f: Color) = darkColorScheme().copy(
+    background = f, surface = f, surfaceDim = f,
+    surfaceContainerLowest = f, surfaceContainerLow = clarear(f, .07f),
+    surfaceContainer = clarear(f, .04f), surfaceContainerHigh = clarear(f, .11f),
+    surfaceContainerHighest = clarear(f, .15f), surfaceBright = clarear(f, .20f),
+    surfaceVariant = clarear(f, .15f), outlineVariant = clarear(f, .15f),
     onBackground = Color(0xFFF2F4F8), onSurface = Color(0xFFF2F4F8), onSurfaceVariant = Color(0xFFC5CAD6),
     outline = Color(0xFF8E9195),
+    error = Color(0xFFFF8A80), errorContainer = Color(0xFF5C1F1B),
 )
 
-private class Destaque(
-    val primaria: Color, val naPrimaria: Color,
-    val conteiner: Color, val noConteiner: Color,
-    val terciaria: Color, val naTerciaria: Color,
-    val terciarioConteiner: Color, val noTerciarioConteiner: Color,
-    val inversa: Color,
-)
-
-private fun ColorScheme.com(d: Destaque) = copy(
-    primary = d.primaria, onPrimary = d.naPrimaria,
-    primaryContainer = d.conteiner, onPrimaryContainer = d.noConteiner,
-    tertiary = d.terciaria, onTertiary = d.naTerciaria,
-    tertiaryContainer = d.terciarioConteiner, onTertiaryContainer = d.noTerciarioConteiner,
-    inversePrimary = d.inversa,
-)
-
-private val Branco = Color.White
-
-private val AzulClaro = BaseClara.com(Destaque(
-    Color(0xFF4C7FD8), Branco, Color(0xFFD6E4FF), Color(0xFF0B2A5C),
-    Color(0xFF0061A4), Branco, Color(0xFFCFE5FF), Color(0xFF001D36), Color(0xFF8AB4F8),
-))
-private val AzulEscuro = BaseEscura.com(Destaque(
-    Color(0xFF3D7FEF), Branco, Color(0xFF1A5BC4), Color(0xFFE0EBFF),
-    Color(0xFF9CCAFF), Color(0xFF003258), Color(0xFF1F5D96), Color(0xFFD5E8FF), Color(0xFF0B57D0),
-))
-
-// Roxo no estilo Nubank, um pouco mais suave que o original.
-private val RoxoClaro = BaseClara.com(Destaque(
-    Color(0xFF8F5BCB), Branco, Color(0xFFEEDFFF), Color(0xFF2E0F57),
-    Color(0xFF6B4E9E), Branco, Color(0xFFF0E4FF), Color(0xFF25094A), Color(0xFFC9A3FF),
-))
-private val RoxoEscuro = BaseEscura.com(Destaque(
-    Color(0xFF9A55E0), Branco, Color(0xFF6A2FB0), Color(0xFFF0E0FF),
-    Color(0xFFD5B6FF), Color(0xFF3B1068), Color(0xFF5A3796), Color(0xFFF0E4FF), Color(0xFF7A35C4),
-))
-
-private val TurquesaClaro =BaseClara.com(Destaque(
-    Color(0xFF3A98B3), Branco, Color(0xFFCFEFF7), Color(0xFF062C38),
-    Color(0xFF00687F), Branco, Color(0xFFBDEEFA), Color(0xFF001F28), Color(0xFF7FD0E6),
-))
-private val TurquesaEscuro = BaseEscura.com(Destaque(
-    Color(0xFF2AA6C0), Branco, Color(0xFF0F6B80), Color(0xFFC4F1FF),
-    Color(0xFF8EDCF0), Color(0xFF00343F), Color(0xFF0B5565), Color(0xFFC4F1FF), Color(0xFF00789A),
-))
-
-private val LaranjaClaro = BaseClara.com(Destaque(
-    Color(0xFFC58A4F), Branco, Color(0xFFFBE2C6), Color(0xFF3A2005),
-    Color(0xFF9A4A00), Branco, Color(0xFFFFDBC2), Color(0xFF311300), Color(0xFFFFA654),
-))
-private val LaranjaEscuro = BaseEscura.com(Destaque(
-    Color(0xFFD08A45), Branco, Color(0xFF94601F), Color(0xFFFFE6CF),
-    Color(0xFFFFC27A), Color(0xFF4A2800), Color(0xFF8A4F00), Color(0xFFFFE2C2), Color(0xFFB45309),
-))
-
-private val VermelhoClaro = BaseClara.com(Destaque(
-    Color(0xFFC86A63), Branco, Color(0xFFFADAD6), Color(0xFF4A1511),
-    Color(0xFF9C4336), Branco, Color(0xFFFFDAD4), Color(0xFF3B0906), Color(0xFFFFB4A8),
-))
-private val VermelhoEscuro = BaseEscura.com(Destaque(
-    Color(0xFFD0645A), Branco, Color(0xFF9A3C34), Color(0xFFFFDAD4),
-    Color(0xFFFFB4A8), Color(0xFF561E17), Color(0xFF8C3A2F), Color(0xFFFFDAD4), Color(0xFFC8372B),
-))
-
-private val VerdeClaro = BaseClara.com(Destaque(
-    Color(0xFF6A9E4D), Branco, Color(0xFFDDF0CE), Color(0xFF14290A),
-    Color(0xFF5E6B00), Branco, Color(0xFFE6F57A), Color(0xFF1B2100), Color(0xFF8FD36A),
-))
-private val VerdeEscuro = BaseEscura.com(Destaque(
-    Color(0xFF6FAE4A), Branco, Color(0xFF3F7226), Color(0xFFE0FFCB),
-    Color(0xFFD4E97A), Color(0xFF2A3800), Color(0xFF4A5F10), Color(0xFFEEFFB0), Color(0xFF4C8A2B),
-))
-
-private val CinzaClaro = BaseClara.com(Destaque(
-    Color(0xFF5F6368), Branco, Color(0xFFDADCE0), Color(0xFF1B1C1E),
-    Color(0xFF5F6368), Branco, Color(0xFFE8EAED), Color(0xFF1B1C1E), Color(0xFFDADCE0),
-))
-private val CinzaEscuro = BaseEscura.com(Destaque(
-    Color(0xFFE3E5E8), Color(0xFF2D3033), Color(0xFF5F6368), Color(0xFFF1F3F4),
-    Color(0xFFBDC1C6), Color(0xFF2D3033), Color(0xFF4A4E52), Color(0xFFE8EAED), Color(0xFF3C4043),
-))
-
-private fun esquemaDe(cor: CorDestaque, escuro: Boolean) = when (cor) {
-    CorDestaque.AZUL -> if (escuro) AzulEscuro else AzulClaro
-    CorDestaque.ROXO -> if (escuro) RoxoEscuro else RoxoClaro
-    CorDestaque.TURQUESA -> if (escuro) TurquesaEscuro else TurquesaClaro
-    CorDestaque.LARANJA -> if (escuro) LaranjaEscuro else LaranjaClaro
-    CorDestaque.VERMELHO -> if (escuro) VermelhoEscuro else VermelhoClaro
-    CorDestaque.VERDE -> if (escuro) VerdeEscuro else VerdeClaro
-    CorDestaque.CINZA -> if (escuro) CinzaEscuro else CinzaClaro
+/** Esquema de cores do app. Automática usa o papel de parede no Android 12+. */
+fun esquemaDe(cor: CorDestaque, escuro: Boolean, fundo: FundoEscuro, ctx: Context? = null): ColorScheme {
+    val base = if (escuro) baseEscura(fundo.cor) else BaseClara
+    if (cor == CorDestaque.AUTOMATICA && ctx != null && Build.VERSION.SDK_INT >= 31) {
+        val d = if (escuro) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
+        return if (escuro) d.copy(
+            background = base.background, surface = base.surface, surfaceDim = base.surfaceDim,
+            surfaceContainerLowest = base.surfaceContainerLowest, surfaceContainerLow = base.surfaceContainerLow,
+            surfaceContainer = base.surfaceContainer, surfaceContainerHigh = base.surfaceContainerHigh,
+            surfaceContainerHighest = base.surfaceContainerHighest, surfaceBright = base.surfaceBright,
+            surfaceVariant = base.surfaceVariant, outlineVariant = base.outlineVariant,
+        ) else d
+    }
+    val f = forte(cor, escuro)
+    val t = if (escuro) claroNoEscuro(cor) else f
+    return base.copy(
+        primary = f, onPrimary = Branco, primaryContainer = f, onPrimaryContainer = Branco,
+        secondary = t, onSecondary = if (escuro) Color(0xFF101214) else Branco,
+        secondaryContainer = f, onSecondaryContainer = Branco,
+        tertiary = t, onTertiary = if (escuro) Color(0xFF101214) else Branco,
+        tertiaryContainer = f, onTertiaryContainer = Branco,
+        inversePrimary = t,
+    )
 }
 
-/** Cor da bolinha na escolha do destaque. */
-fun amostraDe(cor: CorDestaque): Color = when (cor) {
-    CorDestaque.AZUL -> Color(0xFF3D7FEF)
-    CorDestaque.ROXO -> Color(0xFF9A55E0)
-    CorDestaque.TURQUESA -> Color(0xFF2AA6C0)
-    CorDestaque.LARANJA -> Color(0xFFD08A45)
-    CorDestaque.VERMELHO -> Color(0xFFD0645A)
-    CorDestaque.VERDE -> Color(0xFF6FAE4A)
-    CorDestaque.CINZA -> Color(0xFFBDC1C6)
+/** Cor da bolinha na escolha do destaque, conforme o modo atual. */
+fun amostraDe(cor: CorDestaque, escuro: Boolean): Color = if (escuro) claroNoEscuro(cor) else forte(cor, false)
+
+fun nomeDaCor(cor: CorDestaque) = when (cor) {
+    CorDestaque.AUTOMATICA -> "Automática"
+    CorDestaque.AZUL -> "Azul"
+    CorDestaque.VERDE -> "Verde"
+    CorDestaque.ROXO -> "Roxo"
+    CorDestaque.TURQUESA -> "Turquesa"
+    CorDestaque.LARANJA -> "Laranja"
+    CorDestaque.ROSA -> "Rosa"
 }
 
-private val base = Typography()
+/** O tema está escuro agora? (Escuro, ou Sistema com o sistema escuro.) */
+@Composable
+fun temaEscuro(tema: TemaApp): Boolean = when (tema) {
+    TemaApp.SISTEMA -> isSystemInDarkTheme()
+    TemaApp.CLARO -> false
+    TemaApp.ESCURO -> true
+}
 
-private val Tipografia = Typography(
-    displayLarge = base.displayLarge.copy(fontWeight = FontWeight.SemiBold),
-    displayMedium = base.displayMedium.copy(fontWeight = FontWeight.SemiBold),
-    displaySmall = base.displaySmall.copy(fontWeight = FontWeight.SemiBold),
-    headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
-    headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-    headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-    titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Medium),
-)
+// Fonte padrão do Material, sem alterações, como no Organizador Pro.
+private val Tipografia = Typography()
 
 private val Formas = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -162,9 +131,10 @@ private val Formas = Shapes(
 )
 
 @Composable
-fun EscalaTheme(cor: CorDestaque, conteudo: @Composable () -> Unit) {
+fun EscalaTheme(cor: CorDestaque, tema: TemaApp, fundo: FundoEscuro, conteudo: @Composable () -> Unit) {
+    val escuro = temaEscuro(tema)
     MaterialTheme(
-        colorScheme = esquemaDe(cor, isSystemInDarkTheme()),
+        colorScheme = esquemaDe(cor, escuro, fundo, LocalContext.current),
         typography = Tipografia,
         shapes = Formas,
         content = conteudo,

@@ -1,5 +1,6 @@
 package com.wenes.escala.ui
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Alarm
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BeachAccess
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.EditCalendar
@@ -33,6 +35,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -73,6 +76,8 @@ import java.time.format.TextStyle as JavaTextStyle
 import com.wenes.escala.data.Config
 import com.wenes.escala.data.CorDestaque
 import com.wenes.escala.data.Formato
+import com.wenes.escala.data.FundoEscuro
+import com.wenes.escala.data.TemaApp
 import com.wenes.escala.data.Periodo
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -103,17 +108,7 @@ private fun resumo(pagina: Pagina, c: Config): String = when (pagina) {
         else -> "${c.ferias.size} períodos"
     }
     Pagina.AGENDA -> if (c.agenda) "Ligado · ${c.titulo}" else "Desligado"
-    Pagina.APARENCIA -> nomeDaCor(c.cor)
-}
-
-private fun nomeDaCor(cor: CorDestaque) = when (cor) {
-    CorDestaque.AZUL -> "Azul"
-    CorDestaque.ROXO -> "Roxo"
-    CorDestaque.TURQUESA -> "Turquesa"
-    CorDestaque.LARANJA -> "Laranja"
-    CorDestaque.VERMELHO -> "Vermelho"
-    CorDestaque.VERDE -> "Verde"
-    CorDestaque.CINZA -> "Cinza"
+    Pagina.APARENCIA -> "${nomeDaCor(c.cor)} · ${when (c.tema) { TemaApp.SISTEMA -> "Sistema"; TemaApp.CLARO -> "Claro"; TemaApp.ESCURO -> "Escuro" }}"
 }
 
 /**
@@ -296,23 +291,90 @@ private fun PaginaAgenda(c: Config, aoMudar: ((Config) -> Config) -> Unit, pedir
 
 @Composable
 private fun PaginaAparencia(c: Config, aoMudar: ((Config) -> Config) -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    val escuro = temaEscuro(c.tema)
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     Cartao {
-        Row(
-            Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CorDestaque.entries.forEach { opcao ->
-                Box(
-                    Modifier.size(40.dp).clip(CircleShape).background(amostraDe(opcao))
-                        .then(
-                            if (opcao == c.cor) {
-                                Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+        Column {
+            Bloco("Tema") {
+                Segmentado(
+                    listOf(TemaApp.SISTEMA to "Sistema", TemaApp.CLARO to "Claro", TemaApp.ESCURO to "Escuro"),
+                    c.tema,
+                ) { v -> aoMudar { it.copy(tema = v) } }
+            }
+            if (escuro) {
+                HorizontalDivider(color = cs.outlineVariant)
+                Bloco("Fundo escuro · ${c.fundo.nome}") {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        FundoEscuro.entries.forEach { fd ->
+                            val sel = c.fundo == fd
+                            Box(
+                                Modifier.size(40.dp).clip(CircleShape).background(fd.cor)
+                                    .border(if (sel) 3.dp else 1.dp, if (sel) cs.onSurface else cs.outline, CircleShape)
+                                    .clickable { aoMudar { it.copy(fundo = fd) } },
+                            )
+                        }
+                    }
+                }
+            }
+            HorizontalDivider(color = cs.outlineVariant)
+            Bloco("Destaque · ${nomeDaCor(c.cor)}") {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    CorDestaque.entries
+                        .filter { it != CorDestaque.AUTOMATICA || Build.VERSION.SDK_INT >= 31 }
+                        .forEach { cd ->
+                            val sel = c.cor == cd
+                            val m = Modifier.size(40.dp).clip(CircleShape)
+                                .then(if (sel) Modifier.border(3.dp, cs.onSurface, CircleShape) else Modifier)
+                                .clickable { aoMudar { it.copy(cor = cd) } }
+                            if (cd == CorDestaque.AUTOMATICA) {
+                                Box(
+                                    m.background(esquemaDe(cd, escuro, c.fundo, ctx).primary),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.AutoAwesome, null, Modifier.size(20.dp),
+                                        tint = if (escuro) Color.White else Color(0xFF1A1A1A),
+                                    )
+                                }
                             } else {
-                                Modifier
-                            },
-                        )
-                        .clickable { aoMudar { it.copy(cor = opcao) } },
+                                Box(m.background(amostraDe(cd, escuro)))
+                            }
+                        }
+                }
+            }
+        }
+    }
+}
+
+/** Título e controle abaixo, em largura total. */
+@Composable
+private fun Bloco(titulo: String, controle: @Composable () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(titulo, style = MaterialTheme.typography.titleMedium)
+        controle()
+    }
+}
+
+/** Botões de escolha: o selecionado usa o tom forte do destaque, com texto branco. */
+@Composable
+private fun <T> Segmentado(opcoes: List<Pair<T, String>>, selecionado: T, aoEscolher: (T) -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Row(
+        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(cs.surfaceContainerHigh).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        opcoes.forEach { (valor, nome) ->
+            val sel = valor == selecionado
+            Box(
+                Modifier.weight(1f).clip(MaterialTheme.shapes.small)
+                    .background(if (sel) cs.secondaryContainer else Color.Transparent)
+                    .clickable { aoEscolher(valor) }.padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    nome, maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge,
+                    color = if (sel) cs.onSecondaryContainer else cs.onSurfaceVariant,
                 )
             }
         }

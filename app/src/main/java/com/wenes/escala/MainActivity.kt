@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import com.wenes.escala.data.CorDestaque
+import com.wenes.escala.data.Config
 import com.wenes.escala.automacao.Agendador
 import com.wenes.escala.ui.EscalaTheme
 import com.wenes.escala.ui.Raiz
@@ -38,7 +38,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val config by app.repositorio.config.collectAsStateWithLifecycle(initialValue = null)
-            EscalaTheme(config?.cor ?: CorDestaque.AZUL) {
+            EscalaTheme(
+                config?.cor ?: Config().cor, config?.tema ?: Config().tema, config?.fundo ?: Config().fundo,
+            ) {
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     Raiz(
                         app.repositorio,
