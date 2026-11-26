@@ -33,9 +33,9 @@ data class Config(
     /** Título dos eventos de trabalho no Google Agenda. */
     val titulo: String = "Trabalho",
     /** Endereço do local de trabalho, gravado no campo Local do evento. */
-    val local: String = "UBS Parque das Colinas, R. 7-A, 00 - Arraias, TO, 77330-000, Brasil",
+    val local: String = "",
     /** Texto da descrição do evento, acima do horário. */
-    val detalhe: String = "Trabalho no posto de saúde",
+    val detalhe: String = "Dia de trabalho",
     /** Períodos de férias: nesses dias não há trabalho, alarme nem evento de trabalho na agenda. */
     val ferias: List<Periodo> = emptyList(),
     /** Desde quando o histórico já foi gravado na agenda. O passado só é gravado uma vez, nunca regravado. */
