@@ -16,6 +16,15 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -178,6 +187,7 @@ private fun CartaoHoje(c: Config) {
             containerColor = cores.surfaceContainerHigh,
             contentColor = cores.onSurface,
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
     ) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Hoje · ${Formato.dia(hoje)}", style = MaterialTheme.typography.labelLarge)
@@ -225,14 +235,21 @@ private fun Calendario(c: Config, pager: PagerState, aoDia: (LocalDate) -> Unit)
         }
         // Os meses vizinhos já ficam prontos: arrastar não monta a grade no meio do gesto.
         HorizontalPager(
-            pager, Modifier.fillMaxWidth(),
+            // O pager recorta o que passa da borda; ele é 12 dp maior em volta (e o cartão ganha 12 dp de folga)
+            // só para a sombra caber. O cartão fica exatamente no mesmo lugar e tamanho.
+            pager,
+            Modifier.fillMaxWidth().layout { medida, c ->
+                val extra = FOLGA_SOMBRA.roundToPx()
+                val p = medida.measure(c.copy(minWidth = c.maxWidth + 2 * extra, maxWidth = c.maxWidth + 2 * extra))
+                layout(c.maxWidth, p.height - 2 * extra) { p.place(-extra, -extra) }
+            },
             verticalAlignment = Alignment.Top, beyondViewportPageCount = 1,
         ) { pagina ->
+            val forma = MaterialTheme.shapes.large
             Card(
-                Modifier.fillMaxWidth().padding(4.dp),
-                shape = MaterialTheme.shapes.large,
+                Modifier.fillMaxWidth().padding(4.dp + FOLGA_SOMBRA).sombraCentralizada(forma),
+                shape = forma,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(Modifier.fillMaxWidth()) {
@@ -248,6 +265,24 @@ private fun Calendario(c: Config, pager: PagerState, aoDia: (LocalDate) -> Unit)
                 }
             }
         }
+    }
+}
+
+private val FOLGA_SOMBRA = 12.dp
+
+/** Sombra igual em todos os lados (a do Material cai para baixo). Desenhada atrás do cartão. */
+private fun Modifier.sombraCentralizada(forma: Shape): Modifier = drawBehind {
+    val caminho = when (val o = forma.createOutline(size, layoutDirection, this)) {
+        is Outline.Generic -> o.path
+        is Outline.Rounded -> Path().apply { addRoundRect(o.roundRect) }
+        is Outline.Rectangle -> Path().apply { addRect(o.rect) }
+    }
+    drawIntoCanvas { canvas ->
+        val tinta = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.WHITE
+            setShadowLayer(8.dp.toPx(), 0f, 0f, Color.Black.copy(alpha = 0.16f).toArgb())
+        }
+        canvas.nativeCanvas.drawPath(caminho.asAndroidPath(), tinta)
     }
 }
 

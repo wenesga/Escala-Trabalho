@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="fundo_janela">#FF171A26</color>
-    <color name="icone_fundo">#FF44484F</color>
+    <color name="icone_fundo">#FFFFFFFF</color>
 </resources>
